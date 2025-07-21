@@ -78,7 +78,11 @@ func set_color(message: String, player, is_self):
 		else:
 			color_string = processed_color
 			string_to_color(processed_color)
-			
+		
+		var color_poolbyte = var2bytes(["create_new_color", processed_color])
+		for steam_id in Network.OPEN_CONNECTIONS:
+			Steam.sendMessageToUser(str(steam_id), color_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
+		
 #		emit_signal("chalk_color_changed")
 #		print("emittin chalk color change signal :>")
 	else:
@@ -90,21 +94,31 @@ func string_to_color(color_string):
 	print("receiving string, turning into color object")
 	color = Color(color_string)
 	create_new_tile(color)
+	
 
 
 
-func create_new_tile(color: Color): #in hex value
+func create_new_tile(color: Color, id: int = -1): #in hex value
 	print("color object received, creating colored pixel")
 	
-	#first we create
+	var tileset_id
+	
+	#first we create a blank 1x1 image
 	img_data = Image.new()
 	img_data.create(1, 1, false, Image.FORMAT_RGBA8)
 	img_data.fill(color)
 	
-	#now, we add a color-tile ID pair into the dict first, because lookups take up less ram i think?
-	var tileset_id = canvas_TileSet.get_last_unused_tile_id()
-	color_dict[color_string] = tileset_id
+	#now we see if we are creating color tiles from a dict or a new one, if new we get a new ID
 	
+	if id == -1:
+		tileset_id = canvas_TileSet.get_last_unused_tile_id()
+		selected_chalk_color = tileset_id
+		
+	elif not id == -1:
+		tileset_id = id
+	
+	
+	color_dict[color_string] = tileset_id
 	print(str(color_dict))
 	
 	#lets add the textured tile already
@@ -114,8 +128,6 @@ func create_new_tile(color: Color): #in hex value
 	canvas_TileSet.create_tile(tileset_id)
 	canvas_TileSet.tile_set_name(tileset_id, color_string)
 	canvas_TileSet.tile_set_texture(tileset_id, img_texture)
-	
-	selected_chalk_color = tileset_id
 	Lure_chalk_resource.action_params[1] = selected_chalk_color
 	
 	
@@ -135,7 +147,6 @@ func lobby_joined():
 		
 		
 func read_packets():
-	
 	var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 5)
 	if message_array.empty():
 		return
@@ -145,16 +156,31 @@ func read_packets():
 			var decoded = bytes2var(message.get("payload"))
 			var packet_command = decoded[0]
 			
+			#the identity steam ID gets sent like "steamid:[ID]", i think thats weird ngl
+			var sender = message.get("identity")
+			var sender_steam_id = sender.get_slice(":", 1)
+			
 			match packet_command:
 				
 				"color_handshake":
-					var respond_handshake = "hi yes i see you"
-					var response_poolbyte = var2bytes(["response", respond_handshake])
-					Steam.sendMessageToUser(str(decoded[3]), response_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
-					print("i sent a response to the handshake")
+					var respond_handshake = color_dict
+					var response_poolbyte = var2bytes(["handshake_response", respond_handshake])
 					
-				"response":
-					print("ooo " + Players.get_usernme(decoded[3]) + " sent a response")
+					Steam.sendMessageToUser(sender_steam_id, response_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
+					print("received a handshake, sending the color dict")
 					
-		
-	
+				"handshake_response":
+					print("received a response, creating colors...")
+					
+					if color_dict.empty():
+						for color_entry in decoded[1].keys():
+							var color_hex = Color(color_entry)
+							create_new_tile(color_hex, decoded[1].get(color_entry))
+							
+					else:
+						pass
+						
+				"create_new_color":
+					print("someone created a new color, passing on to create_new_tile")
+					color_string = decoded[1]
+					string_to_color(decoded[1])
