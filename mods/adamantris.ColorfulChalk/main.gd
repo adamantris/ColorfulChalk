@@ -2,12 +2,17 @@ extends Node
 
 signal chalk_color_changed
 
+onready var Lure = get_node("/root/SulayreLure")
 onready var Players = get_node_or_null("/root/ToesSocks/Players")
 onready var Chat = get_node_or_null("/root/ToesSocks/Chat")
+
+#onready var chalk = preload("res://mods/adamantris.ColorfulChalk/RGB_chalk.tres")
 
 var canvas_TileSet
 var color_dict: Dictionary = {}
 var selected_chalk_color
+var Lure_chalk_dict
+var Lure_chalk_resource
 
 onready var color_string #: String = "#ff0000ff"
 onready var color
@@ -18,10 +23,16 @@ export onready var img_data
 func _ready():
 	Chat.connect("player_messaged", self, "set_color")
 	Players.connect("ingame", self, "ingame")
+	Lure.add_content("adamantris.ColorfulChalk", "Rainbow Chalk", "res://mods/adamantris.ColorfulChalk/chalk_special.tres", [Lure.LURE_FLAGS.FREE_UNLOCK])
 	#string_to_color(color_string)
 	pass # Replace with function body.
 
 func ingame(): #to get the tilemap, gotta add dynamically after all or the whole world explodes
+	Lure_chalk_dict = Lure.item_list.get("adamantris.ColorfulChalk.Rainbow Chalk")
+	Lure_chalk_resource = Lure_chalk_dict.get("resource")
+	
+	
+	print(str(Lure_chalk_resource))
 	var canvas_TileMap = get_node("/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas/Viewport/TileMap")
 	canvas_TileSet = canvas_TileMap.get_tileset()
 	print(str(canvas_TileMap))
@@ -40,13 +51,14 @@ func set_color(message: String, player, is_self):
 		if processed_color in color_dict.keys():
 			print("color already been created once, setting to existing tile id")
 			selected_chalk_color = color_dict.get(processed_color)
+			Lure_chalk_resource.action_params[1] = selected_chalk_color
 			
 		else:
 			color_string = processed_color
 			string_to_color(processed_color)
 			
-		emit_signal("chalk_color_changed")
-		print("emittin chalk color change signal :>")
+#		emit_signal("chalk_color_changed")
+#		print("emittin chalk color change signal :>")
 	else:
 		print("ayo how did u find urself with this message its not normal help AAAAAAAAAAAAAAAAAa")
 	
@@ -78,6 +90,11 @@ func create_new_tile(color: Color): #in hex value
 	canvas_TileSet.create_tile(tileset_id)
 	canvas_TileSet.tile_set_name(tileset_id, color_string)
 	canvas_TileSet.tile_set_texture(tileset_id, img_texture)
+	
+	selected_chalk_color = tileset_id
+	Lure_chalk_resource.action_params[1] = selected_chalk_color
+	
+	
 	
 	print("AAAAA hopefully a new tile has been created: " + str(canvas_TileSet.tile_get_name(tileset_id)) + " " + str(canvas_TileSet.tile_get_texture(tileset_id)))
 	

@@ -1,33 +1,26 @@
-[gd_resource type="Resource" load_steps=5 format=2]
+[gd_resource type="Resource" load_steps=3 format=2]
 
-[ext_resource path="res://mods/adamantris.ColorfulChalk/RGB_chalk_script.gd" type="Script" id=1]
-[ext_resource path="res://Assets/Textures/Items/toolicons5.png" type="Texture" id=2]
-
-[sub_resource type="SpatialMaterial" id=1]
-flags_transparent = true
-albedo_texture = ExtResource( 2 )
-
-[sub_resource type="QuadMesh" id=2]
-material = SubResource( 1 )
+[ext_resource path="res://Resources/Scripts/item_resource.gd" type="Script" id=1]
+[ext_resource path="res://Scenes/ItemMeshes/Chalk/chalk_yellow.tscn" type="PackedScene" id=2]
 
 [resource]
 script = ExtResource( 1 )
 item_name = "Rainbow Chalk"
-item_description = "Contains all the colors in the world!"
+item_description = "Contains all the color in the world!"
 catch_blurb = ""
 item_is_hidden = false
-show_item = true
-show_scene = false
+show_item = false
+item_scene = ExtResource( 2 )
+show_scene = true
 uses_size = false
-mesh = SubResource( 2 )
 action = "_paint"
 action_params = [ 2, 0 ]
 release_action = "_paint_stop"
 prop_code = ""
 help_text = "draw (SPRINT for bigger brush, SNEAK for smaller)"
-arm_value = 0.0
+arm_value = 0.3
 hold_offset = 0.0
-unselectable = false
+unselectable = true
 unrenamable = false
 category = "tool"
 alive = true
@@ -36,7 +29,7 @@ catch_difficulty = 1.0
 catch_speed = 120.0
 loot_table = "none"
 loot_weight = 1.0
-average_size = 75.0
+average_size = 1.0
 sell_value = 5
 sell_multiplier = 1.0
 obtain_xp = 30

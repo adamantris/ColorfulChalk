@@ -1,8 +1,8 @@
-extends Node
+extends Resource
 
 
 
-var resource_type = "tool"
+var resource_type = "item"
 
 export  var item_name = "Rainbow Chalk"
 export  var item_description = "Contains all the colors in the world!"
@@ -22,7 +22,7 @@ export (float, 0.0, 0.4, 0.1) var arm_value = 0.0
 export  var hold_offset = 0.0
 export  var unselectable = false
 export  var unrenamable = false
-export (String, "none", "fish", "bug", "tool", "furniture") var category = "none"
+export (String, "none", "fish", "bug", "tool", "furniture") var category = "tool"
 export  var alive = true
 export  var tier = 0
 
