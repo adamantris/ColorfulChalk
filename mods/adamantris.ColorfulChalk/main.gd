@@ -71,33 +71,38 @@ func set_color(message: String, player, is_self):
 		var processed_color = "#ff" + new_color_received
 		print("made correct with alpha: " + processed_color)
 		
-		if processed_color in color_dict.keys():
-			print("color already been created once, setting to existing tile id")
-			selected_chalk_color = color_dict.get(processed_color)
-			Lure_chalk_resource.action_params[1] = selected_chalk_color
+		if processed_color.length() == 9 and processed_color.countn("#") == 1: #a small check so people dont put whateverthefuck into the color tileset
+		
+			if processed_color in color_dict.keys():
+				print("color already been created once, setting to existing tile id")
+				selected_chalk_color = color_dict.get(processed_color)
+				Lure_chalk_resource.action_params[1] = selected_chalk_color
+				
+			else:
+				global_color_string = processed_color
+				string_to_color(processed_color.to_lower())
 			
+			var color_poolbyte = var2bytes(["create_new_color", processed_color])
+			for steam_id in Network.OPEN_CONNECTIONS:
+				Steam.sendMessageToUser(str(steam_id), color_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
+			
+	#		emit_signal("chalk_color_changed")
+	#		print("emittin chalk color change signal :>")
 		else:
-			global_color_string = processed_color
-			string_to_color(processed_color)
-		
-		var color_poolbyte = var2bytes(["create_new_color", processed_color])
-		for steam_id in Network.OPEN_CONNECTIONS:
-			Steam.sendMessageToUser(str(steam_id), color_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
-		
-#		emit_signal("chalk_color_changed")
-#		print("emittin chalk color change signal :>")
-	else:
-		print("ayo how did u find urself with this message its not normal help AAAAAAAAAAAAAAAAAa")
+			print("uh oh, the color string is in a wrong format! discarding...")
+			PlayerData._send_notification("you entered an invalid code! use 6 letters/numbers, without #", 1)
 	
 
 
-func string_to_color(color_string):
+func string_to_color(color_string: String):
 	global_color_string = color_string
 	print(typeof(color_string))
 	print("receiving string, turning into color object")
 	yield(get_tree().create_timer(1.0), "timeout")
 	var color = Color(global_color_string)
 	create_new_tile(color)
+	
+	PlayerData._send_notification("created color #" + color_string.trim_prefix("#ff"))
 	
 
 
