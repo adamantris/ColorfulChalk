@@ -206,7 +206,7 @@ func read_packets():
 			
 		elif not decoded[0] in valid_commands:
 			print("received garbage data, passing")
-			PlayerData._send_notification("you received a packet filled with garbage, please tell ferrum")
+			PlayerData._send_notification("you received a packet filled with garbage, please tell ferrum - " + str(decoded))
 			
 		else:
 			print("something went *very* wrong in packet command validation")
