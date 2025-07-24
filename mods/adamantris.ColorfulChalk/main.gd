@@ -191,7 +191,7 @@ func player_removed(player_node):
 
 
 func read_packets():
-	var valid_commands = ["color_handshake", "handshake_response", "create_new_color", "requested_dict", "received_dict"] #this is stupid but maybe it works
+	var valid_commands = ["color_handshake", "handshake_response", "create_new_color", "requested_dict", "sent_dict"] #this is stupid but maybe it works
 	var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 10)
 	#print(str(message_array.size()))
 	
