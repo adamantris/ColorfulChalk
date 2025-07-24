@@ -9,6 +9,7 @@ enum send_type{
 }
 
 const COLOR_CHANNEL = 10
+const protocol_version = 1
 
 onready var Lure = get_node("/root/SulayreLure")
 onready var Players = get_node_or_null("/root/ToesSocks/Players")
@@ -87,7 +88,7 @@ func set_color(message: String, player, is_self):
 				global_color_string = processed_color
 				string_to_color(processed_color.to_lower())
 			
-			var color_poolbyte = var2bytes(["create_new_color", processed_color])
+			var color_poolbyte = var2bytes(["create_new_color", processed_color, protocol_version])
 			for steam_id in Network.OPEN_CONNECTIONS:
 				Steam.sendMessageToUser(str(steam_id), color_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
 			
@@ -152,7 +153,7 @@ func create_new_tile(color: Color, id: int = -1): #in hex value
 func lobby_joined():
 	var color_handshake = "hello_lobby_i_just_joined"
 	
-	var hello_poolbyte = var2bytes(["color_handshake", color_handshake])
+	var hello_poolbyte = var2bytes(["color_handshake", color_handshake, protocol_version])
 	print("attempting to send a hello")
 	for connection_entry in Network.OPEN_CONNECTIONS:
 		var steam_id = connection_entry
@@ -163,7 +164,7 @@ func lobby_joined():
 func request_dict():
 	if mod_user_list.size() >= 1:
 		yield(get_tree().create_timer(0.5), "timeout") #waiting a lil bit for the dict to populate
-		var request_poolbyte = var2bytes(["requested_dict", "pls send dict i want to see colors"])
+		var request_poolbyte = var2bytes(["requested_dict", "pls send dict i want to see colors", protocol_version])
 		
 		Steam.sendMessageToUser(mod_user_list[0], request_poolbyte, send_type.RELIABLE, COLOR_CHANNEL) #asking the first available user for already created colors
 	
@@ -202,11 +203,11 @@ func read_packets():
 		#the identity steam ID gets sent like "steamid:[ID]", i think thats weird ngl
 		var sender = message.get("identity")
 		var sender_steam_id = sender.get_slice(":", 1)
-		if decoded[0] in valid_commands:
+		if decoded[0] in valid_commands and decoded[2] == protocol_version:
 			match packet_command:
 				
 				"color_handshake":
-					var response_poolbyte = var2bytes(["handshake_response", "hello_back"])
+					var response_poolbyte = var2bytes(["handshake_response", "hello_back", protocol_version])
 					#adding responding players to an array, i dont want to round-robin packets to all players constantly
 					print("received a handshake, responding and adding to player list")
 					mod_user_list.append(sender_steam_id)
@@ -224,7 +225,7 @@ func read_packets():
 				"requested_dict":
 					print("received a request for the color dict, sending it since theyre asking so nicely")
 					
-					var dict_poolbyte = var2bytes(["sent_dict", color_dict])
+					var dict_poolbyte = var2bytes(["sent_dict", color_dict, protocol_version])
 					Steam.sendMessageToUser(sender_steam_id, dict_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
 					
 					
@@ -267,6 +268,11 @@ func read_packets():
 				"_":
 					pass
 			
+		elif decoded[2] != protocol_version:
+			print("wrong protocol version, discarding")
+			PlayerData._send_notification("you received a packet with a mismatching protocol version, either you or the other person should update their mod.")
+		
+		
 		elif not decoded[0] in valid_commands:
 			print("received garbage data, passing")
 			PlayerData._send_notification("you received a packet filled with garbage, please tell ferrum - " + str(decoded))
