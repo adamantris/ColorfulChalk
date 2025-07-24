@@ -67,7 +67,7 @@ func ingame(): #to get the tilemap, gotta add dynamically after all or the whole
 	print(str(canvas_TileMap))
 
 func set_color(message: String, player, is_self):
-	if is_self == true and message.begins_with("!color"):
+	if is_self == true and (message.begins_with("!color") or message.begins_with("!colour")): #i added "colour" by request for a friend they wanted !colour lol
 		print("check passed")
 		
 		var new_color_received = message.get_slice(" ", 1)
@@ -87,9 +87,7 @@ func set_color(message: String, player, is_self):
 				global_color_string = processed_color
 				string_to_color(processed_color.to_lower())
 			
-			var color_poolbyte = var2bytes(["create_new_color", processed_color, protocol_version])
-			for steam_id in Network.OPEN_CONNECTIONS:
-				Steam.sendMessageToUser(str(steam_id), color_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
+			
 			
 	#		emit_signal("chalk_color_changed")
 	#		print("emittin chalk color change signal :>")
@@ -99,13 +97,13 @@ func set_color(message: String, player, is_self):
 	
 
 
-func string_to_color(color_string: String):
+func string_to_color(color_string: String, tile_id: int = -1):
 	global_color_string = color_string
 	print(typeof(color_string))
 	print("got passed a string, creating color")
 	#yield(get_tree().create_timer(1.0), "timeout")
 	var color = Color(global_color_string)
-	create_new_tile(color)
+	create_new_tile(color, tile_id)
 	
 	PlayerData._send_notification("created color #" + color_string.trim_prefix("#ff"))
 	
@@ -143,6 +141,14 @@ func create_new_tile(color: Color, id: int = -1): #in hex value
 	canvas_TileSet.tile_set_name(tileset_id, global_color_string)
 	canvas_TileSet.tile_set_texture(tileset_id, img_texture)
 	Lure_chalk_resource.action_params[1] = selected_chalk_color
+	
+	var compound_id_pair = [global_color_string, tileset_id]
+	
+	var color_poolbyte = var2bytes(["create_new_color", compound_id_pair, protocol_version])
+	
+	if id == -1:
+		for steam_id in mod_user_list:
+			Steam.sendMessageToUser(str(steam_id), color_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
 	
 	
 	
@@ -236,7 +242,7 @@ func read_packets():
 						print(color_string)
 						if typeof(color_string) == TYPE_STRING and color_string.length() == 9:
 							
-							string_to_color(color_string)
+							string_to_color(color_string, decoded[1].get(color_string))
 							
 						else:
 							print("hey something went wrong with the received dict, this is the type of one entry: " + str(typeof(color_string)))
@@ -262,8 +268,8 @@ func read_packets():
 						
 				"create_new_color":
 					print("someone created a new color, passing on to create_new_tile")
-					global_color_string = decoded[1]
-					string_to_color(decoded[1])
+					var remote_color_array = decoded[1]
+					string_to_color(remote_color_array[0], remote_color_array[1]) #string first, then ID
 
 				"_":
 					pass
