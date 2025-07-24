@@ -67,7 +67,6 @@ func ingame(): #to get the tilemap, gotta add dynamically after all or the whole
 	print(str(canvas_TileMap))
 
 func set_color(message: String, player, is_self):
-	print("color command")
 	if is_self == true and message.begins_with("!color"):
 		print("check passed")
 		
@@ -103,8 +102,8 @@ func set_color(message: String, player, is_self):
 func string_to_color(color_string: String):
 	global_color_string = color_string
 	print(typeof(color_string))
-	print("receiving string, turning into color object")
-	yield(get_tree().create_timer(1.0), "timeout")
+	print("got passed a string, creating color")
+	#yield(get_tree().create_timer(1.0), "timeout")
 	var color = Color(global_color_string)
 	create_new_tile(color)
 	
@@ -187,12 +186,13 @@ func player_removed(player_node):
 		print("tried to remove tiles, tiles left: " + str(canvas_TileSet.get_tiles_ids()))
 		
 		color_dict = {}
-		mod_user_list.empty()
+		mod_user_list = []
 
 
 func read_packets():
 	var valid_commands = ["color_handshake", "handshake_response", "create_new_color", "requested_dict", "sent_dict"] #this is stupid but maybe it works
-	var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 10)
+	var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 10) 
+	#REMEMBER: dec[0] is command, dec[1] is payload data, dec[2] is prot version
 	#print(str(message_array.size()))
 	
 	#print("rolling over packets now")
@@ -233,7 +233,7 @@ func read_packets():
 					print("received a color dict, turning into colors")
 					
 					for color_string in decoded[1].keys():
-						
+						print(color_string)
 						if typeof(color_string) == TYPE_STRING and color_string.length() == 9:
 							
 							string_to_color(color_string)
