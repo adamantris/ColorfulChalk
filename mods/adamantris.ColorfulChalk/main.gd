@@ -15,6 +15,8 @@ onready var Lure = get_node("/root/SulayreLure")
 onready var Players = get_node_or_null("/root/ToesSocks/Players")
 onready var Chat = get_node_or_null("/root/ToesSocks/Chat")
 
+
+onready var color_picker = preload("res://mods/adamantris.ColorfulChalk/scenes/color_picker.tscn")
 #onready var chalk = preload("res://mods/adamantris.ColorfulChalk/RGB_chalk.tres")
 
 var canvas_TileSet
@@ -74,6 +76,8 @@ func ingame(): #to get the tilemap, gotta add dynamically after all or the whole
 	var canvas_TileMap = get_node("/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas/Viewport/TileMap")
 	canvas_TileSet = canvas_TileMap.get_tileset()
 	print(str(canvas_TileMap))
+	
+	self.add_child(color_picker.instance())
 
 func set_color(message: String, player, is_self):
 	if is_self == true and (message.begins_with("!color") or message.begins_with("!colour")): #i added "colour" by request for a friend they wanted !colour lol
