@@ -9,7 +9,7 @@ enum send_type{
 }
 
 const COLOR_CHANNEL = 10
-const protocol_version = 2
+const protocol_version = 3
 
 onready var Lure = get_node("/root/SulayreLure")
 onready var Players = get_node_or_null("/root/ToesSocks/Players")
@@ -30,6 +30,9 @@ var packet_timer: float = 0.0
 var global_color_string: String = "#ff0000ff"
 export onready var img_data
 
+export onready var atlas_img: Image
+export onready var atlas_tex: ImageTexture
+var color_slot = 0
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -38,6 +41,12 @@ func _ready():
 	Players.connect("ingame", self, "ingame")
 	Players.connect("player_removed", self, "player_removed")
 	Lure.add_content("adamantris.ColorfulChalk", "Rainbow Chalk", "res://mods/adamantris.ColorfulChalk/chalk_rainbow.tres", [Lure.LURE_FLAGS.FREE_UNLOCK])
+	
+	atlas_img = Image.new()
+	atlas_img.create(512, 512, false, Image.FORMAT_RGBA8)
+	
+	atlas_tex = ImageTexture.new()
+	atlas_tex.create_from_image(atlas_img)
 	
 	
 	#Steam.connect("lobby_joined", self, "lobby_joined")
@@ -94,6 +103,11 @@ func set_color(message: String, player, is_self):
 		else:
 			print("uh oh, the color string is in a wrong format! discarding...")
 			PlayerData._send_notification("you entered an invalid code! use 6 letters/numbers, without #", 1)
+			
+			
+	if is_self == true and message.begins_with("!save"):
+		atlas_img.save_png("user://test.png")
+		print("hopefully saved a png lol")
 	
 
 
@@ -112,6 +126,22 @@ func string_to_color(color_string: String, tile_id: int = -1):
 
 func create_new_tile(color: Color, id: int = -1): #in hex value
 	print("color object received, creating colored pixel")
+	
+	var atlas_size = 512 #i hate this but this way godot has less resources to care about which is important in webfibby i think, at least my mod created some lag in tester art
+	
+
+	
+	var color_x = color_slot % atlas_size #literally first time i found use for modulo, make it wrap around
+	var color_y = int(color_slot / atlas_size) #we dont want stinky decimal points
+	
+	atlas_img.lock()
+	atlas_img.set_pixel(color_x, color_y, color)
+	print("currently set pixel color: " + atlas_img.get_pixel(color_x, color_y).to_html())
+	atlas_img.unlock()
+	
+	print("set pixel in atlas image at coords " + str(color_x) + " " + str(color_y) + " to color " + global_color_string + ", incrementing slot")
+	color_slot += 1
+
 	
 	var tileset_id
 	
