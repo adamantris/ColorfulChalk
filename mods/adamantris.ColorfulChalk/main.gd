@@ -137,6 +137,8 @@ func create_new_tile(color: Color, id: int = -1): #in hex value
 	atlas_img.lock()
 	atlas_img.set_pixel(color_x, color_y, color)
 	print("currently set pixel color: " + atlas_img.get_pixel(color_x, color_y).to_html())
+	
+	atlas_tex.set_data(atlas_img)
 	atlas_img.unlock()
 	
 	print("set pixel in atlas image at coords " + str(color_x) + " " + str(color_y) + " to color " + global_color_string + ", incrementing slot")
@@ -146,10 +148,10 @@ func create_new_tile(color: Color, id: int = -1): #in hex value
 	var tileset_id
 	
 	#first we create a blank 1x1 image
-	img_data = Image.new()
-	img_data.create(1, 1, false, Image.FORMAT_RGB8)
-	img_data.fill(color)
-	
+#	img_data = Image.new()
+#	img_data.create(1, 1, false, Image.FORMAT_RGB8)
+#	img_data.fill(color)
+#
 	#now we see if we are creating color tiles from a dict or a new one, if new we get a new ID
 	
 	if id == -1:
@@ -163,14 +165,24 @@ func create_new_tile(color: Color, id: int = -1): #in hex value
 	color_dict[global_color_string] = tileset_id
 	print(str(color_dict))
 	
-	#lets add the textured tile already
-	var img_texture = ImageTexture.new()
-	img_texture.create_from_image(img_data)
+	var atlas_final = AtlasTexture.new()
+	atlas_final.atlas = atlas_tex
+	atlas_final.region = Rect2(color_x, color_y, 1, 1) #create a texture out of the given position, with a size of 1x1
+	print("created an atlastexture, data is " + str(atlas_final.region))
 	
 	canvas_TileSet.create_tile(tileset_id)
 	canvas_TileSet.tile_set_name(tileset_id, global_color_string)
-	canvas_TileSet.tile_set_texture(tileset_id, img_texture)
+	canvas_TileSet.tile_set_texture(tileset_id, atlas_final)
 	Lure_chalk_resource.action_params[1] = selected_chalk_color
+	
+	
+	
+	#lets add the textured tile already
+#	var img_texture = ImageTexture.new()
+#	img_texture.create_from_image(img_data)
+#
+
+#	Lure_chalk_resource.action_params[1] = selected_chalk_color
 	
 	var compound_id_pair = [global_color_string, tileset_id]
 	
