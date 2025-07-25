@@ -228,6 +228,12 @@ func player_removed(player_node):
 	elif player_node.owner_id == Network.STEAM_ID: #it took me too long to implement dict clearing lol im lazy
 		print("you left, emptying player list, removing created tiles and color dict")
 		
+		atlas_img.lock()
+		atlas_img.fill(Color("#00000000")) #a nice blank slate
+		atlas_tex.set_data(atlas_img)
+		atlas_img.unlock()
+		color_slot = 0
+		
 		for tile in color_dict.keys():
 			canvas_TileSet.remove_tile(color_dict.get(tile))
 		
@@ -236,6 +242,18 @@ func player_removed(player_node):
 		color_dict = {}
 		mod_user_list = []
 
+
+func compute_hash(hash_data) -> PoolByteArray: #i dont even know why the fuck this is necessary but it always desyncs so im angy
+	var hash_compute = HashingContext.new()
+	hash_compute.start(HashingContext.HASH_MD5)
+	hash_compute.update(hash_data)
+	
+	var hashed_data = hash_compute.finish()
+	
+	print("just computed a hash, hex representation: " + hashed_data.hex_encode())
+	return hashed_data
+	
+#behold, my network code of shame
 
 func read_packets():
 	var valid_commands = ["color_handshake", "handshake_response", "create_new_color", "requested_dict", "sent_dict"] #this is stupid but maybe it works
@@ -284,7 +302,10 @@ func read_packets():
 				"requested_dict":
 					print("received a request for the color dict, sending it since theyre asking so nicely")
 					
-					var dict_poolbyte = var2bytes(["sent_dict", color_dict, protocol_version])
+					var atlas_bytes = atlas_img.save_png_to_buffer()
+					var atlas_hash = compute_hash(atlas_bytes)
+					
+					var dict_poolbyte = var2bytes(["sent_dict", color_dict, protocol_version, atlas_hash])
 					Steam.sendMessageToUser(sender_steam_id, dict_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
 					
 					
@@ -301,6 +322,19 @@ func read_packets():
 							print("hey something went wrong with the received dict, this is the type of one entry: " + str(typeof(color_string)))
 							PlayerData._send_notification("something went wrong in recreating the old colors of a player, yell at ferrum and show them this: " + str(typeof(color_string)) + " " + str(color_string))
 							
+					var atlas_bytes = atlas_img.save_png_to_buffer()
+					var local_atlas_hash = compute_hash(atlas_bytes)
+					
+					if local_atlas_hash == decoded[3]:
+						print("the hashes are matching, carrying on :)")
+						
+					else:
+						print("the hecc the hashes arent matching, re-requesting atlas")
+						PlayerData._send_notification("yell at ferrum that the generated colors sent by another player arent matching with the ones you got saved pls", 1)
+						
+						request_dict()
+						
+					
 					
 					print(str(decoded[1]) + str(typeof(decoded[1])))
 					
