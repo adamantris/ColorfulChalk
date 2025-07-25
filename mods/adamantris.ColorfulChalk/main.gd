@@ -9,7 +9,7 @@ enum send_type{
 }
 
 const COLOR_CHANNEL = 10
-const protocol_version = 1
+const protocol_version = 2
 
 onready var Lure = get_node("/root/SulayreLure")
 onready var Players = get_node_or_null("/root/ToesSocks/Players")
@@ -209,7 +209,18 @@ func read_packets():
 		#the identity steam ID gets sent like "steamid:[ID]", i think thats weird ngl
 		var sender = message.get("identity")
 		var sender_steam_id = sender.get_slice(":", 1)
-		if decoded[0] in valid_commands and decoded[2] == protocol_version:
+		
+		if decoded[2] != protocol_version:
+			print("wrong protocol version, discarding")
+			PlayerData._send_notification("you received a packet with a mismatching protocol version, either you or the other person should update their mod.")
+		
+		elif not decoded[0] in valid_commands:
+			print("received garbage data, passing")
+			PlayerData._send_notification("you received a packet filled with garbage, please tell ferrum - " + str(decoded))
+			
+
+			
+		elif decoded[0] in valid_commands and decoded[2] == protocol_version:
 			match packet_command:
 				
 				"color_handshake":
@@ -271,18 +282,11 @@ func read_packets():
 					var remote_color_array = decoded[1]
 					string_to_color(remote_color_array[0], remote_color_array[1]) #string first, then ID
 
-				"_":
+				_:
 					pass
-			
-		elif decoded[2] != protocol_version:
-			print("wrong protocol version, discarding")
-			PlayerData._send_notification("you received a packet with a mismatching protocol version, either you or the other person should update their mod.")
-		
-		
-		elif not decoded[0] in valid_commands:
-			print("received garbage data, passing")
-			PlayerData._send_notification("you received a packet filled with garbage, please tell ferrum - " + str(decoded))
 			
 		else:
 			print("something went *very* wrong in packet command validation")
 			PlayerData._send_notification("yell at ferrum that the mod couldnt read a packet")
+		
+
