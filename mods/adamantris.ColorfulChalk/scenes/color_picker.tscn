@@ -3,6 +3,7 @@
 [ext_resource path="res://mods/adamantris.ColorfulChalk/scenes/picker.gd" type="Script" id=1]
 
 [node name="color_picker" type="CanvasLayer"]
+visible = false
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
 margin_left = 1552.0

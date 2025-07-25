@@ -1,6 +1,6 @@
 extends Node
 
-signal chalk_color_changed
+signal picker_visible
 
 enum send_type{
 	RELIABLE = 8,
@@ -50,6 +50,11 @@ func _ready():
 	atlas_tex = ImageTexture.new()
 	atlas_tex.create_from_image(atlas_img)
 	
+	#this key is just temporary, ill think of a better solution along the way (maybe)
+	InputMap.add_action("toggle_picker")
+	var keyevent = InputEventKey.new()
+	keyevent.scancode = KEY_P
+	InputMap.action_add_event("toggle_picker", keyevent)
 	
 	#Steam.connect("lobby_joined", self, "lobby_joined")
 	
@@ -64,6 +69,11 @@ func _process(delta):
 		
 	else:
 		packet_timer += delta
+		
+		
+func _input(event):
+	if Input.is_action_just_pressed("toggle_picker") and Players.local_player.busy == false:
+		emit_signal("picker_visible")
 
 func ingame(): #to get the tilemap, gotta add dynamically after all or the whole world explodes
 	Lure_chalk_dict = Lure.item_list.get("adamantris.ColorfulChalk.Rainbow Chalk")
