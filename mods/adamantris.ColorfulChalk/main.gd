@@ -227,21 +227,22 @@ func player_removed(player_node):
 		
 	elif player_node.owner_id == Network.STEAM_ID: #it took me too long to implement dict clearing lol im lazy
 		print("you left, emptying player list, removing created tiles and color dict")
-		
-		atlas_img.lock()
-		atlas_img.fill(Color("#00000000")) #a nice blank slate
-		atlas_tex.set_data(atlas_img)
-		atlas_img.unlock()
-		color_slot = 0
-		
-		for tile in color_dict.keys():
-			canvas_TileSet.remove_tile(color_dict.get(tile))
-		
-		print("tried to remove tiles, tiles left: " + str(canvas_TileSet.get_tiles_ids()))
-		
-		color_dict = {}
-		mod_user_list = []
+		clear_color()
 
+func clear_color():
+	atlas_img.lock()
+	atlas_img.fill(Color("#00000000")) #a nice blank slate
+	atlas_tex.set_data(atlas_img)
+	atlas_img.unlock()
+	color_slot = 0
+	
+	for tile in color_dict.keys():
+		canvas_TileSet.remove_tile(color_dict.get(tile))
+	
+	print("tried to remove tiles, tiles left: " + str(canvas_TileSet.get_tiles_ids()))
+	
+	color_dict = {}
+	mod_user_list = []
 
 func compute_hash(hash_data) -> PoolByteArray: #i dont even know why the fuck this is necessary but it always desyncs so im angy
 	var hash_compute = HashingContext.new()
@@ -331,7 +332,7 @@ func read_packets():
 					else:
 						print("the hecc the hashes arent matching, re-requesting atlas")
 						PlayerData._send_notification("yell at ferrum that the generated colors sent by another player arent matching with the ones you got saved pls", 1)
-						
+						clear_color()
 						request_dict()
 						
 					
