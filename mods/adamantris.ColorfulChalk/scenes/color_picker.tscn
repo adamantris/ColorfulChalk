@@ -1,4 +1,6 @@
-[gd_scene format=2]
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://mods/adamantris.ColorfulChalk/scenes/picker.gd" type="Script" id=1]
 
 [node name="color_picker" type="CanvasLayer"]
 
@@ -38,10 +40,10 @@ margin_bottom = 126.327
 mouse_filter = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
-edit_alpha = false
 deferred_mode = true
 presets_enabled = false
 presets_visible = false
+script = ExtResource( 1 )
 
 [node name="icky_panel_to_block_unwanted_controls" type="Panel" parent="PanelContainer/VBoxContainer/Control"]
 margin_left = -7.0
