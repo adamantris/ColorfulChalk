@@ -49,6 +49,7 @@ func _ready():
 	
 	atlas_tex = ImageTexture.new()
 	atlas_tex.create_from_image(atlas_img)
+	atlas_tex.flags += Texture.FLAG_CONVERT_TO_LINEAR
 	
 	#this key is just temporary, ill think of a better solution along the way (maybe)
 	InputMap.add_action("toggle_picker")
@@ -135,6 +136,8 @@ func string_to_color(color_string: String, tile_id: int = -1):
 	
 	PlayerData._send_notification("created color #" + color_string.trim_prefix("#ff"))
 	
+	print(color.a8)
+	
 
 
 
@@ -151,6 +154,13 @@ func create_new_tile(color: Color, id: int = -1): #in hex value
 	atlas_img.lock()
 	atlas_img.set_pixel(color_x, color_y, color)
 	print("currently set pixel color: " + atlas_img.get_pixel(color_x, color_y).to_html())
+	
+	var flags = atlas_tex.get_flags()
+	
+	#flags &= ~Texture.FLAG_CONVERT_TO_LINEAR
+	
+	
+	print(atlas_tex.get_flags())
 	
 	atlas_tex.set_data(atlas_img)
 	atlas_img.unlock()

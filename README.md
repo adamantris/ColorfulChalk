@@ -8,4 +8,4 @@ to select a color, press P to open up the color picker. alternatively, you can e
 
 enter !save in global chat to save a copy of the current color atlas
 
-thanks for A-10 for creating the sparkly chalk sprite!
+thanks for [A-10-Art](https://steamcommunity.com/profiles/76561198823870477/) for creating the sparkly chalk sprite!
