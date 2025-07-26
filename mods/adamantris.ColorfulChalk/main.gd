@@ -42,7 +42,7 @@ func _ready():
 	Chat.connect("player_messaged", self, "set_color")
 	Players.connect("ingame", self, "ingame")
 	Players.connect("player_removed", self, "player_removed")
-	Lure.add_content("adamantris.ColorfulChalk", "Rainbow Chalk", "res://mods/adamantris.ColorfulChalk/chalk_rainbow.tres", [Lure.LURE_FLAGS.FREE_UNLOCK])
+	Lure.add_content("adamantris.ColorfulChalk", "Rainbow Chalk", "res://mods/adamantris.ColorfulChalk/resources/chalk_rainbow.tres", [Lure.LURE_FLAGS.FREE_UNLOCK])
 	
 	atlas_img = Image.new()
 	atlas_img.create(512, 512, false, Image.FORMAT_RGBA8)
@@ -157,7 +157,7 @@ func create_new_tile(color: Color, id: int = -1): #in hex value
 	
 	var flags = atlas_tex.get_flags()
 	
-	#flags &= ~Texture.FLAG_CONVERT_TO_LINEAR
+	flags &= ~Texture.FLAG_CONVERT_TO_LINEAR
 	
 	
 	print(atlas_tex.get_flags())
