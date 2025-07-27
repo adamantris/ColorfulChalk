@@ -19,7 +19,8 @@ onready var Chat = get_node_or_null("/root/ToesSocks/Chat")
 onready var color_picker = preload("res://mods/adamantris.ColorfulChalk/scenes/color_picker.tscn")
 #onready var chalk = preload("res://mods/adamantris.ColorfulChalk/RGB_chalk.tres")
 
-var canvas_TileSet
+var canvas_TileMap: TileMap
+var canvas_TileSet: TileSet
 var color_dict: Dictionary = {}
 var selected_chalk_color
 var Lure_chalk_dict
@@ -39,7 +40,23 @@ var color_slot = 0
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	yield(get_tree().create_timer(1.0), "timeout")
-	Chat.connect("player_messaged", self, "set_color")
+	
+	#look a friend managed to get me sidetracked on creating an image saving function, so now i need a folder too
+	var file_manager = Directory.new()
+	if file_manager.dir_exists("user://colorfulchalk_images") == false:
+		
+		print("yeh the images folder doesnt exist, making new folder")
+		file_manager.make_dir("user://colorfulchalk_images")
+		
+	else:
+		print("the img folder exists, passing")
+		pass
+	
+	print("file manager did its job, clearing")
+	get_tree().queue_delete(file_manager)
+	
+	
+	Chat.connect("player_messaged", self, "chat_command")
 	Players.connect("ingame", self, "ingame")
 	Players.connect("player_removed", self, "player_removed")
 	Lure.add_content("adamantris.ColorfulChalk", "Rainbow Chalk", "res://mods/adamantris.ColorfulChalk/resources/chalk_rainbow.tres", [Lure.LURE_FLAGS.FREE_UNLOCK])
@@ -84,13 +101,13 @@ func ingame(): #to get the tilemap, gotta add dynamically after all or the whole
 	
 	
 	print(str(Lure_chalk_resource))
-	var canvas_TileMap = get_node("/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas/Viewport/TileMap")
+	canvas_TileMap = get_node("/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas/Viewport/TileMap")
 	canvas_TileSet = canvas_TileMap.get_tileset()
 	print(str(canvas_TileMap))
 	
 	self.add_child(color_picker.instance())
 
-func set_color(message: String, player, is_self):
+func chat_command(message: String, player, is_self):
 	if is_self == true and (message.begins_with("!color") or message.begins_with("!colour")): #i added "colour" by request for a friend they wanted !colour lol
 		print("check passed")
 		
@@ -120,10 +137,67 @@ func set_color(message: String, player, is_self):
 			PlayerData._send_notification("you entered an invalid code! use 6 letters/numbers, without #", 1)
 			
 			
-	if is_self == true and message.begins_with("!save"):
+	if is_self == true and message.begins_with("!debug_save"):
 		atlas_img.save_png("user://test.png")
 		print("hopefully saved a png lol")
 	
+	
+	#this is experimental, i just wanna see if its possible
+	if is_self == true and message.begins_with("!save"):
+		
+		var canv_id = message.get_slice(" ", 1)
+		
+		if not int(canv_id) in [1, 2, 3, 4]:
+			print("im yelling at u you there are only 4 chalk spots")
+			PlayerData._send_notification("invalid canvas ID, only numbers between 1 and 4 are valid", 1)
+			return
+		
+		var canv_paths = {
+			"1": "/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas/Viewport/TileMap",
+			"2": "/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas2/Viewport/TileMap",
+			"3": "/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas3/Viewport/TileMap",
+			"4": "/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas4/Viewport/TileMap"
+		}
+		
+		var canv_tilemap_node = get_node(canv_paths.get(canv_id))
+		var canv_tileset_node = canv_tilemap_node.get_tileset()
+		
+		atlas_img.lock()
+		var tileset_cells = canv_tilemap_node.get_used_cells()
+		
+		var temp_image = Image.new()
+		temp_image.create(200, 200, false, Image.FORMAT_RGBA8)
+		
+		temp_image.lock()
+		#print("this is the tileset cells used (vec2 array): " + str(tileset_cells))
+		#temp_image.lock()
+		
+		
+		for cell in tileset_cells:
+			#print(str(canvas_TileMap.get_cellv(cell)))
+			var canv_tile_tex = canvas_TileSet.tile_get_texture(canv_tilemap_node.get_cellv(cell))
+			
+			var pixel_color
+			#print(canv_tile_tex)
+			#print(str(canv_tile_tex))
+			if !(canv_tile_tex is AtlasTexture):
+				print("this is vanilla chalk, passing")
+				pass
+			if canv_tile_tex is AtlasTexture:
+				var canv_tile_coord = canv_tile_tex.region
+				pixel_color = atlas_img.get_pixel(canv_tile_coord.position.x, canv_tile_coord.position.y)
+			#print(canv_tile_coord)
+			
+			if pixel_color:
+			
+				temp_image.set_pixelv(cell, pixel_color)
+				print("set pixel at " + str(cell) + " to color " + pixel_color.to_html())
+				
+			else:
+				print("no mod chalk found, sorry")
+		temp_image.save_png("user://colorfulchalk_images/canvas_" + str(int(rand_range(0.0, 100000.0))) + ".png")
+		temp_image.unlock()
+		atlas_img.unlock()
 
 
 func string_to_color(color_string: String, tile_id: int = -1):
@@ -384,7 +458,7 @@ func read_packets():
 					string_to_color(remote_color_array[0], remote_color_array[1]) #string first, then ID
 
 				_:
-					pass
+					return
 			
 		else:
 			print("something went *very* wrong in packet command validation")
