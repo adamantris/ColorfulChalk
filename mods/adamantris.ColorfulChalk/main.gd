@@ -9,7 +9,7 @@ enum send_type{
 }
 
 const COLOR_CHANNEL = 10
-const protocol_version = 3
+const protocol_version = 4
 
 onready var Lure = get_node("/root/SulayreLure")
 onready var Players = get_node_or_null("/root/ToesSocks/Players")
@@ -33,6 +33,9 @@ var packet_thread: Thread
 var packet_semaphore: Semaphore #first attempt at multithreading im suuuuuuuure everything will be fine :3
 var packet_mutex: Mutex
 var kill_threads = false
+
+var color_thread: Thread
+var color_mutex: Mutex
 
 var global_color_string: String = "#ff0000ff"
 export onready var img_data
@@ -219,6 +222,17 @@ func chat_command(message: String, player, is_self):
 		temp_image.save_png("user://colorfulchalk_images/canvas_" + str(int(rand_range(0.0, 100000.0))) + ".png")
 		temp_image.unlock()
 		atlas_img.unlock()
+		
+	if is_self == true and message.begins_with("!hash"):
+		var hash_debug_thread = Thread.new()
+		
+		var debug_hash = var2bytes("bepis")
+		print("created debug hash: " + debug_hash.hex_encode())
+		
+		hash_debug_thread.start(self, "compute_hash", debug_hash)
+		var hashed = hash_debug_thread.wait_to_finish()
+		
+		print("hashed data: " + str(hashed.hex_encode()))
 
 
 func string_to_color(color_string: String, tile_id: int = -1):
@@ -379,9 +393,13 @@ func read_packets():
 	while true:
 		packet_semaphore.wait()
 		print("semaphore post, processing network packets")
-		var valid_commands = ["color_handshake", "handshake_response", "create_new_color", "requested_dict", "sent_dict"] #this is stupid but maybe it works
+		
+		var valid_commands = ["color_handshake", "handshake_response", "create_new_color", "requested_dict", "received_dict"] #this is stupid but maybe it works
+		
+		packet_mutex.lock()
 		var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 10) 
-		#REMEMBER: dec[0] is command, dec[1] is payload data, dec[2] is prot version
+		packet_mutex.unlock()
+		#REMEMBER: dec[0] is command, dec[1] is payload data, dec[2] is prot version, dec[3] is a hash of something, whenever you need it
 		#print(str(message_array.size()))
 		
 		#print("rolling over packets now")
@@ -417,7 +435,9 @@ func read_packets():
 						
 					"handshake_response":
 						print("received a response, stuffing player " + sender_steam_id + " into mod user list")
+						packet_mutex.lock()
 						mod_user_list.append(sender_steam_id)
+						packet_mutex.unlock()
 						
 						print("asking first available player for the color dict")
 						request_dict()
@@ -425,28 +445,33 @@ func read_packets():
 					"requested_dict":
 						print("received a request for the color dict, sending it since theyre asking so nicely")
 						
+						var hash_thread = Thread.new()
 						var atlas_bytes = atlas_img.save_png_to_buffer()
-						var atlas_hash = compute_hash(atlas_bytes)
-						
-						var dict_poolbyte = var2bytes(["sent_dict", color_dict, protocol_version, atlas_hash])
+						hash_thread.start(self, "compute_hash", atlas_bytes)
+						var atlas_hash = hash_thread.wait_to_finish()
+						var dict_poolbyte = var2bytes(["received_dict", color_dict, protocol_version, atlas_hash])
 						Steam.sendMessageToUser(sender_steam_id, dict_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
+						Steam.call_deferred("sendMessageToUser", sender_steam_id, dict_poolbyte, send_type.RELIABLE, atlas_hash)
 						
-						
-					"sent_dict":
+					"received_dict":
 						print("received a color dict, turning into colors")
 						
 						for color_string in decoded[1].keys():
 							print(color_string)
 							if typeof(color_string) == TYPE_STRING and color_string.length() == 9:
 								
-								string_to_color(color_string, decoded[1].get(color_string))
+								call_deferred("string_to_color", color_string, decoded[1].get(color_string))
+								#string_to_color(color_string, decoded[1].get(color_string))
 								
 							else:
 								print("hey something went wrong with the received dict, this is the type of one entry: " + str(typeof(color_string)))
 								PlayerData._send_notification("something went wrong in recreating the old colors of a player, yell at ferrum and show them this: " + str(typeof(color_string)) + " " + str(color_string))
 								
+						
+						var hash_thread = Thread.new()
 						var atlas_bytes = atlas_img.save_png_to_buffer()
-						var local_atlas_hash = compute_hash(atlas_bytes)
+						hash_thread.start(self, "compute_hash", atlas_bytes)
+						var local_atlas_hash = hash_thread.wait_to_finish()
 						
 						if local_atlas_hash == decoded[3]:
 							print("the hashes are matching, carrying on :)")
