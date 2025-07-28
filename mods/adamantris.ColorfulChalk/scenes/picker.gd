@@ -21,7 +21,7 @@ func button_pressed():
 	var color_string = "#" + self.color.to_html()
 	print("ayooooo we got a color signal " + color_string)
 	main.global_color_string = color_string
-	main.string_to_color(color_string)
+	main.add_color_data(color_string)
 	picker_visible()
 
 func picker_visible():
