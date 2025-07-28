@@ -29,6 +29,10 @@ var Lure_chalk_resource
 var mod_user_list = []
 
 var packet_timer: float = 0.0
+var packet_thread: Thread
+var packet_semaphore: Semaphore #first attempt at multithreading im suuuuuuuure everything will be fine :3
+var packet_mutex: Mutex
+var kill_threads = false
 
 var global_color_string: String = "#ff0000ff"
 export onready var img_data
@@ -40,6 +44,7 @@ var color_slot = 0
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	yield(get_tree().create_timer(1.0), "timeout")
+	
 	
 	#look a friend managed to get me sidetracked on creating an image saving function, so now i need a folder too
 	var file_manager = Directory.new()
@@ -54,6 +59,7 @@ func _ready():
 	
 	print("file manager did its job, clearing")
 	get_tree().queue_delete(file_manager)
+	
 	
 	
 	Chat.connect("player_messaged", self, "chat_command")
@@ -74,7 +80,16 @@ func _ready():
 	keyevent.scancode = KEY_P
 	InputMap.action_add_event("toggle_picker", keyevent)
 	
-	#Steam.connect("lobby_joined", self, "lobby_joined")
+	
+	packet_semaphore = Semaphore.new()
+	packet_mutex = Mutex.new()
+	packet_thread = Thread.new()
+	packet_thread.start(self, "read_packets")
+	
+	if packet_thread.is_active() == true:
+		print("yippee the thread has started")
+	elif packet_thread.is_active() == false:
+		print("oh no the thread isnt running")
 	
 	
 	
@@ -82,8 +97,14 @@ func _ready():
 	pass # Replace with function body.
 	
 func _process(delta):
-	if packet_timer >= 0.2:
-		read_packets()
+	
+	if Players.in_game == false:
+		return
+	
+	elif packet_timer >= 0.2:
+		print("about to post the semaphore")
+		packet_semaphore.post()
+		packet_timer = 0.0
 		
 	else:
 		packet_timer += delta
@@ -355,113 +376,116 @@ func compute_hash(hash_data) -> PoolByteArray: #i dont even know why the fuck th
 #behold, my network code of shame
 
 func read_packets():
-	var valid_commands = ["color_handshake", "handshake_response", "create_new_color", "requested_dict", "sent_dict"] #this is stupid but maybe it works
-	var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 10) 
-	#REMEMBER: dec[0] is command, dec[1] is payload data, dec[2] is prot version
-	#print(str(message_array.size()))
-	
-	#print("rolling over packets now")
-	for message in message_array:
-		var decoded = bytes2var(message.get("payload"))
-		var packet_command = decoded[0]
+	while true:
+		packet_semaphore.wait()
+		print("semaphore post, processing network packets")
+		var valid_commands = ["color_handshake", "handshake_response", "create_new_color", "requested_dict", "sent_dict"] #this is stupid but maybe it works
+		var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 10) 
+		#REMEMBER: dec[0] is command, dec[1] is payload data, dec[2] is prot version
+		#print(str(message_array.size()))
 		
-		#the identity steam ID gets sent like "steamid:[ID]", i think thats weird ngl
-		var sender = message.get("identity")
-		var sender_steam_id = sender.get_slice(":", 1)
-		
-		if decoded[2] != protocol_version:
-			print("wrong protocol version, discarding")
-			PlayerData._send_notification("you received a packet with a mismatching protocol version, either you or the other person should update their mod.")
-		
-		elif not decoded[0] in valid_commands:
-			print("received garbage data, passing")
-			PlayerData._send_notification("you received a packet filled with garbage, please tell ferrum - " + str(decoded))
+		#print("rolling over packets now")
+		for message in message_array:
+			var decoded = bytes2var(message.get("payload"))
+			var packet_command = decoded[0]
 			
-
+			#the identity steam ID gets sent like "steamid:[ID]", i think thats weird ngl
+			var sender = message.get("identity")
+			var sender_steam_id = sender.get_slice(":", 1)
 			
-		elif decoded[0] in valid_commands and decoded[2] == protocol_version:
-			match packet_command:
+			if decoded[2] != protocol_version:
+				print("wrong protocol version, discarding")
+				PlayerData._send_notification("you received a packet with a mismatching protocol version, either you or the other person should update their mod.")
+			
+			elif not decoded[0] in valid_commands:
+				print("received garbage data, passing")
+				PlayerData._send_notification("you received a packet filled with garbage, please tell ferrum - " + str(decoded))
 				
-				"color_handshake":
-					var response_poolbyte = var2bytes(["handshake_response", "hello_back", protocol_version])
-					#adding responding players to an array, i dont want to round-robin packets to all players constantly
-					print("received a handshake, responding and adding to player list")
-					mod_user_list.append(sender_steam_id)
 
-					Steam.sendMessageToUser(sender_steam_id, response_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
+				
+			elif decoded[0] in valid_commands and decoded[2] == protocol_version:
+				match packet_command:
 					
-					
-				"handshake_response":
-					print("received a response, stuffing player " + sender_steam_id + " into mod user list")
-					mod_user_list.append(sender_steam_id)
-					
-					print("asking first available player for the color dict")
-					request_dict()
-					
-				"requested_dict":
-					print("received a request for the color dict, sending it since theyre asking so nicely")
-					
-					var atlas_bytes = atlas_img.save_png_to_buffer()
-					var atlas_hash = compute_hash(atlas_bytes)
-					
-					var dict_poolbyte = var2bytes(["sent_dict", color_dict, protocol_version, atlas_hash])
-					Steam.sendMessageToUser(sender_steam_id, dict_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
-					
-					
-				"sent_dict":
-					print("received a color dict, turning into colors")
-					
-					for color_string in decoded[1].keys():
-						print(color_string)
-						if typeof(color_string) == TYPE_STRING and color_string.length() == 9:
-							
-							string_to_color(color_string, decoded[1].get(color_string))
-							
-						else:
-							print("hey something went wrong with the received dict, this is the type of one entry: " + str(typeof(color_string)))
-							PlayerData._send_notification("something went wrong in recreating the old colors of a player, yell at ferrum and show them this: " + str(typeof(color_string)) + " " + str(color_string))
-							
-					var atlas_bytes = atlas_img.save_png_to_buffer()
-					var local_atlas_hash = compute_hash(atlas_bytes)
-					
-					if local_atlas_hash == decoded[3]:
-						print("the hashes are matching, carrying on :)")
+					"color_handshake":
+						var response_poolbyte = var2bytes(["handshake_response", "hello_back", protocol_version])
+						#adding responding players to an array, i dont want to round-robin packets to all players constantly
+						print("received a handshake, responding and adding to player list")
+						mod_user_list.append(sender_steam_id)
+
+						Steam.sendMessageToUser(sender_steam_id, response_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
 						
-					else:
-						print("the hecc the hashes arent matching, re-requesting atlas")
-						PlayerData._send_notification("yell at ferrum that the generated colors sent by another player arent matching with the ones you got saved pls", 1)
-						clear_color()
+						
+					"handshake_response":
+						print("received a response, stuffing player " + sender_steam_id + " into mod user list")
+						mod_user_list.append(sender_steam_id)
+						
+						print("asking first available player for the color dict")
 						request_dict()
 						
-					
-					
-					print(str(decoded[1]) + str(typeof(decoded[1])))
-					
-#					if color_dict.empty():
-#						for color_entry in decoded[1]:
-#							print("section out of received packet from handshake: " + str(color_entry) + " " + str(typeof(color_entry)))
-#							if typeof(color_entry) != TYPE_STRING:
-#								print("invalid variant type, want strin, but getting " + str(color_entry))
-#								PlayerData._send_notification("yell this at ferrum pls: " + str(color_entry))
-#
-#							else:
-#								print("should have received a string " + color_entry)
-#								var dict_color = Color(color_entry)
-#								create_new_tile(dict_color)
-#
-#					else:
-#						pass
+					"requested_dict":
+						print("received a request for the color dict, sending it since theyre asking so nicely")
 						
-				"create_new_color":
-					print("someone created a new color, passing on to create_new_tile")
-					var remote_color_array = decoded[1]
-					string_to_color(remote_color_array[0], remote_color_array[1]) #string first, then ID
+						var atlas_bytes = atlas_img.save_png_to_buffer()
+						var atlas_hash = compute_hash(atlas_bytes)
+						
+						var dict_poolbyte = var2bytes(["sent_dict", color_dict, protocol_version, atlas_hash])
+						Steam.sendMessageToUser(sender_steam_id, dict_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
+						
+						
+					"sent_dict":
+						print("received a color dict, turning into colors")
+						
+						for color_string in decoded[1].keys():
+							print(color_string)
+							if typeof(color_string) == TYPE_STRING and color_string.length() == 9:
+								
+								string_to_color(color_string, decoded[1].get(color_string))
+								
+							else:
+								print("hey something went wrong with the received dict, this is the type of one entry: " + str(typeof(color_string)))
+								PlayerData._send_notification("something went wrong in recreating the old colors of a player, yell at ferrum and show them this: " + str(typeof(color_string)) + " " + str(color_string))
+								
+						var atlas_bytes = atlas_img.save_png_to_buffer()
+						var local_atlas_hash = compute_hash(atlas_bytes)
+						
+						if local_atlas_hash == decoded[3]:
+							print("the hashes are matching, carrying on :)")
+							
+						else:
+							print("the hecc the hashes arent matching, re-requesting atlas")
+							PlayerData._send_notification("yell at ferrum that the generated colors sent by another player arent matching with the ones you got saved pls", 1)
+							clear_color()
+							request_dict()
+							
+						
+						
+						print(str(decoded[1]) + str(typeof(decoded[1])))
+						
+	#					if color_dict.empty():
+	#						for color_entry in decoded[1]:
+	#							print("section out of received packet from handshake: " + str(color_entry) + " " + str(typeof(color_entry)))
+	#							if typeof(color_entry) != TYPE_STRING:
+	#								print("invalid variant type, want strin, but getting " + str(color_entry))
+	#								PlayerData._send_notification("yell this at ferrum pls: " + str(color_entry))
+	#
+	#							else:
+	#								print("should have received a string " + color_entry)
+	#								var dict_color = Color(color_entry)
+	#								create_new_tile(dict_color)
+	#
+	#					else:
+	#						pass
+							
+					"create_new_color":
+						print("someone created a new color, passing on to create_new_tile")
+						var remote_color_array = decoded[1]
+						string_to_color(remote_color_array[0], remote_color_array[1]) #string first, then ID
 
-				_:
-					return
+					_:
+						return
+				
+			else:
+				print("something went *very* wrong in packet command validation")
+				PlayerData._send_notification("yell at ferrum that the mod couldnt read a packet")
 			
-		else:
-			print("something went *very* wrong in packet command validation")
-			PlayerData._send_notification("yell at ferrum that the mod couldnt read a packet")
-		
 
