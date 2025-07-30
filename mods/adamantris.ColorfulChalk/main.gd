@@ -169,7 +169,7 @@ func chat_command(message: String, player, is_self):
 			
 			
 	if is_self == true and message.begins_with("!debug_save"):
-		atlas_img.save_png("user://test.png")
+		atlas_img.save_png("user://colorfulchalk_images/test.png")
 		print("hopefully saved a png lol")
 	
 	
@@ -504,6 +504,8 @@ func read_packets():
 		
 		packet_mutex.lock()
 		var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 10) 
+		if message_array.empty() == false:
+			PlayerData._send_notification("you received a packet, lets see if its valid")
 		packet_mutex.unlock()
 		#REMEMBER: dec[0] is command, dec[1] is payload data, dec[2] is prot version, dec[3] is a hash of something, whenever you need it
 		#print(str(message_array.size()))
@@ -541,7 +543,7 @@ func read_packets():
 						packet_mutex.unlock()
 
 						#Steam.sendMessageToUser(sender_steam_id, response_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
-						Steam.call_deferred("sendMessageToUser", sender_steam_id, response_poolbyte, send_type.RELIABLE)
+						Steam.call_deferred("sendMessageToUser", sender_steam_id, response_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
 						
 						
 					"handshake_response":
@@ -562,7 +564,7 @@ func read_packets():
 						var atlas_hash = hash_thread.wait_to_finish()
 						var dict_poolbyte = var2bytes(["received_dict", color_dict, protocol_version, atlas_hash])
 						#Steam.sendMessageToUser(sender_steam_id, dict_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
-						Steam.call_deferred("sendMessageToUser", sender_steam_id, dict_poolbyte, send_type.RELIABLE, atlas_hash)
+						Steam.call_deferred("sendMessageToUser", sender_steam_id, dict_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
 						
 					"received_dict":
 						print("received a color dict, turning into colors")
