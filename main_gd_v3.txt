@@ -101,75 +101,19 @@ func ingame():
 	self.add_child(color_picker.instance())
 
 func chat_command(message: String, player, is_self):
-
-			
-	if is_self == true and message.begins_with("!debug_save"):
-		atlas_img.save_png("user://colorfulchalk_images/test.png")
-		print("hopefully saved a png lol")
-	
-	
-	#this is experimental, i just wanna see if its possible
-	if is_self == true and message.begins_with("!save"):
+	if is_self and (message.begins_with("!color") or message.begins_with("!colour")):
+		var new_color_received = message.get_slice(" ", 1)
+		var processed_color = "#" + new_color_received.to_lower()
 		
-		var canv_id = message.get_slice(" ", 1)
-		
-		if not int(canv_id) in [1, 2, 3, 4]:
-			print("im yelling at u you there are only 4 chalk spots")
-			PlayerData._send_notification("invalid canvas ID, only numbers between 1 and 4 are valid", 1)
-			return
-		
-
-		
-		var canv_tilemap_node = get_node(canv_paths.get(canv_id))
-		var canv_tileset_node = canv_tilemap_node.get_tileset()
-		
-		atlas_img.lock()
-		var tileset_cells = canv_tilemap_node.get_used_cells()
-		
-		var temp_image = Image.new()
-		temp_image.create(200, 200, false, Image.FORMAT_RGBA8)
-		
-		temp_image.lock()
-		#print("this is the tileset cells used (vec2 array): " + str(tileset_cells))
-		#temp_image.lock()
-		
-		
-		for cell in tileset_cells:
-			#print(str(canvas_TileMap.get_cellv(cell)))
-			var canv_tile_tex = canvas_TileSet.tile_get_texture(canv_tilemap_node.get_cellv(cell))
-			
-			var pixel_color
-			#print(canv_tile_tex)
-			#print(str(canv_tile_tex))
-			if !(canv_tile_tex is AtlasTexture):
-				print("this is vanilla chalk, passing")
-				pass
-			if canv_tile_tex is AtlasTexture:
-				var canv_tile_coord = canv_tile_tex.region
-				pixel_color = atlas_img.get_pixel(canv_tile_coord.position.x, canv_tile_coord.position.y)
-			#print(canv_tile_coord)
-			
-			if pixel_color:
-			
-				temp_image.set_pixelv(cell, pixel_color)
-				print("set pixel at " + str(cell) + " to color " + pixel_color.to_html())
-				
+		if processed_color.length() == 7 and processed_color.begins_with("#"):
+			if processed_color in color_dict:
+				selected_chalk_color = color_dict.get(processed_color)
+				Lure_chalk_resource.action_params[1] = selected_chalk_color
 			else:
-				print("no mod chalk found, sorry")
-		temp_image.save_png("user://colorfulchalk_images/canvas_" + str(int(rand_range(0.0, 100000.0))) + ".png")
-		temp_image.unlock()
-		atlas_img.unlock()
-		
-	if is_self == true and message.begins_with("!hash"):
-		var hash_debug_thread = Thread.new()
-		
-		var debug_hash = var2bytes("bepis")
-		print("created debug hash: " + debug_hash.hex_encode())
-		
-		hash_debug_thread.start(self, "compute_hash", debug_hash)
-		var hashed = hash_debug_thread.wait_to_finish()
-		
-		print("hashed data: " + str(hashed.hex_encode()))
+				var color_obj = Color(processed_color)
+				add_color_data({"pixels": [color_obj], "loader_path": null})
+		else:
+			PlayerData._send_notification("Invalid color code format. Use # followed by 6 hex chars.", 1)
 
 # --- START: FINAL, OPTIMIZED COLOR PROCESSING LOGIC ---
 
