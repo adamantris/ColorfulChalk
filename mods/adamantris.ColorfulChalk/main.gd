@@ -1,3 +1,19 @@
+# ColorfulChalk, a mod that extends chalk colors and adds save/load functionality.
+# Copyright (C) 2025 adamantris
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 extends Node
 
 signal picker_visible
@@ -23,6 +39,7 @@ onready var canv_paths = {
 onready var Lure = get_node("/root/SulayreLure")
 onready var Players = get_node_or_null("/root/ToesSocks/Players")
 onready var Chat = get_node_or_null("/root/ToesSocks/Chat")
+var loader_logic
 
 
 onready var color_picker = preload("res://mods/adamantris.ColorfulChalk/scenes/color_picker.tscn")
@@ -43,16 +60,21 @@ var packet_semaphore: Semaphore
 var packet_mutex: Mutex
 var kill_threads = false
 
+var world_node
+
 var tile_thread: Thread
 
 export onready var atlas_img: Image
 export onready var atlas_tex: ImageTexture
 var color_slot = 0
+var button_id = 0
+
 
 func _ready():
 	yield(get_tree().create_timer(1.0), "timeout")
 	
 	self.add_child(file_scene.instance())
+	self.add_child(color_picker.instance())
 	
 	var file_manager = Directory.new()
 	if not file_manager.dir_exists("user://colorfulchalk_images"):
@@ -63,6 +85,8 @@ func _ready():
 	Players.connect("ingame", self, "ingame")
 	Players.connect("player_removed", self, "player_removed")
 	Lure.add_content("adamantris.ColorfulChalk", "Rainbow Chalk", "res://mods/adamantris.ColorfulChalk/resources/chalk_rainbow.tres", [Lure.LURE_FLAGS.FREE_UNLOCK])
+	
+	loader_logic = $"UI"
 	
 	atlas_img = Image.new()
 	atlas_img.create(512, 512, false, Image.FORMAT_RGBA8)
@@ -80,6 +104,20 @@ func _ready():
 	packet_mutex = Mutex.new()
 	packet_thread = Thread.new()
 	packet_thread.start(self, "read_packets")
+	
+	get_tree().connect("node_added", self, "on_node_add")
+	
+	
+func on_node_add(node):
+	if node.get_path() == "/root/world":
+		loader_logic.menu_block = false
+		node.connect("tree_exiting", self, "on_node_exit")
+		world_node = node
+		
+func on_node_exit():
+	world_node.disconnect("tree_exiting", self, "on_node_exit")
+	loader_logic.menu_block = true
+
 
 func _process(delta):
 	if not Players.in_game:
@@ -98,7 +136,7 @@ func ingame():
 	canvas_TileMap = get_node("/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas/Viewport/TileMap")
 	canvas_TileSet = canvas_TileMap.get_tileset()
 	
-	self.add_child(color_picker.instance())
+	#self.add_child(color_picker.instance())
 
 func chat_command(message: String, player, is_self):
 
@@ -171,7 +209,6 @@ func chat_command(message: String, player, is_self):
 		
 		print("hashed data: " + str(hashed.hex_encode()))
 
-# --- START: FINAL, OPTIMIZED COLOR PROCESSING LOGIC ---
 
 func add_color_data(color_data):
 	if tile_thread and tile_thread.is_active():
@@ -184,16 +221,18 @@ func add_color_data(color_data):
 		"pixels": color_data.get("pixels"),
 		"existing_colors": color_dict.keys(),
 		"loader_path": color_data.get("loader_path"),
+		"tilemap_path": color_data.get("tilemap_path"),
 		"tileset_duplicate": canvas_TileSet.duplicate(),
 		"atlas_img_duplicate": atlas_img.duplicate(),
 		"current_color_slot": color_slot
 	}
-	tile_thread.start(self, "_thread_process_new_colors", thread_data)
+	_thread_process_new_colors(thread_data)
 
 func _thread_process_new_colors(data: Dictionary):
 	var pixels: Array = data.get("pixels")
 	var existing_colors: Array = data.get("existing_colors")
 	var loader_path = data.get("loader_path")
+	var tilemap_path = data.get("tilemap_path")
 	var tileset_duplicate: TileSet = data.get("tileset_duplicate")
 	var atlas_img_duplicate: Image = data.get("atlas_img_duplicate")
 	var current_color_slot: int = data.get("current_color_slot")
@@ -221,17 +260,18 @@ func _thread_process_new_colors(data: Dictionary):
 			
 			atlas_img_duplicate.set_pixel(color_x, color_y, color)
 			
-			var new_atlas_tex = AtlasTexture.new()
+			
 			# NOTE: The atlas texture itself can't be passed to the thread, 
 			# so we create a placeholder. It will be reassigned on the main thread.
-			new_atlas_tex.region = Rect2(color_x, color_y, 1, 1)
+			var region = Rect2(color_x, color_y, 1, 1)
 			
 			var new_tile_id = tileset_duplicate.get_last_unused_tile_id()
 			tileset_duplicate.create_tile(new_tile_id)
 			
 			var color_string = color.to_html(false)
 			tileset_duplicate.tile_set_name(new_tile_id, color_string)
-			tileset_duplicate.tile_set_texture(new_tile_id, new_atlas_tex)
+			tileset_duplicate.tile_set_texture(new_tile_id, atlas_tex)
+			tileset_duplicate.tile_set_region(new_tile_id, region)
 			
 			new_color_map[color_string] = new_tile_id
 			current_color_slot += 1
@@ -243,9 +283,10 @@ func _thread_process_new_colors(data: Dictionary):
 		"new_atlas_img": atlas_img_duplicate,
 		"new_color_map": new_color_map,
 		"new_color_slot": current_color_slot,
-		"loader_path": loader_path
+		"loader_path": loader_path,
+		"tilemap_path": tilemap_path
 	}
-	call_deferred("_apply_thread_results", results)
+	_apply_thread_results(results)
 
 func _apply_thread_results(results: Dictionary):
 	print("Applying thread results to main game...")
@@ -254,6 +295,7 @@ func _apply_thread_results(results: Dictionary):
 	var new_color_map = results.get("new_color_map")
 	var new_color_slot = results.get("new_color_slot")
 	var loader_path = results.get("loader_path")
+	var tilemap_path = results.get("tilemap_path")
 
 	# Re-assign the atlas texture to all new tiles on the main thread
 	for color_string in new_color_map:
@@ -263,12 +305,17 @@ func _apply_thread_results(results: Dictionary):
 			atlas_tex_instance.atlas = self.atlas_tex
 
 	# Apply changes to the game state
-	canvas_TileMap.tile_set = new_tileset
-	self.canvas_TileSet = new_tileset
+	for path in canv_paths.values():
+		var map_node = get_node_or_null(path) as TileMap
+		if map_node:
+			map_node.tile_set = new_tileset
+	
+	self.canvas_TileSet = new_tileset # Also update old reference
 	self.atlas_img = new_atlas_img
 	self.atlas_tex.create_from_image(self.atlas_img)
 	self.color_dict.merge(new_color_map, true)
 	self.color_slot = new_color_slot
+	Lure_chalk_resource.action_params[1] = color_slot + 6 #this is a quick and dirty hack, the chalk is buggy as shit anyways
 
 	print("Finished applying results.")
 
@@ -279,8 +326,8 @@ func _apply_thread_results(results: Dictionary):
 
 	if loader_path:
 		var loader_logic = get_node_or_null(loader_path)
-		if loader_logic:
-			loader_logic.actually_paint_tiles_on_map()
+		if loader_logic and tilemap_path:
+			loader_logic.actually_paint_tiles_on_map(tilemap_path)
 		else:
 			print("ERROR: Could not find loader_logic at path: " + loader_path)
 		
@@ -288,7 +335,6 @@ func _apply_thread_results(results: Dictionary):
 		tile_thread.wait_to_finish()
 	print("Process finished and thread cleaned up.")
 
-# --- END: FINAL LOGIC ---
 
 func lobby_joined():
 	var color_handshake = "hello_lobby_i_just_joined"

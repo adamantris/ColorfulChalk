@@ -1,3 +1,19 @@
+# ColorfulChalk, a mod that extends chalk colors and adds save/load functionality.
+# Copyright (C) 2025 adamantris
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 extends ColorPicker
 
 
@@ -7,7 +23,8 @@ extends ColorPicker
 
 onready var save_button = $"../../Button"
 onready var main = $"/root/adamantrisColorfulChalk"
-onready var color_picker = $"/root/adamantrisColorfulChalk/color_picker"
+onready var color_picker = $"/root/adamantrisColorfulChalk/UI/color_picker"
+onready var loader_logic = $"/root/adamantrisColorfulChalk/UI"
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -18,11 +35,11 @@ func _ready():
 
 
 func button_pressed():
-	var color_string = "#" + self.color.to_html()
-	print("ayooooo we got a color signal " + color_string)
-	main.global_color_string = color_string
-	main.add_color_data(color_string)
-	picker_visible()
+	var color = self.color
+	#print("ayooooo we got a color signal " + color_string)
+	#main.global_color_string = color_string
+	loader_logic.create_one_color(color)
+	
 
 func picker_visible():
 	if color_picker.visible == false:
