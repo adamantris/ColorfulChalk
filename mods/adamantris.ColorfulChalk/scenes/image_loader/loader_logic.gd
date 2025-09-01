@@ -22,13 +22,17 @@ extends Node
 onready var main = get_node("/root/adamantrisColorfulChalk")
 onready var paste_select = $"paste_stuff/paste_select"
 onready var file_dialog = $"paste_stuff/FileDialog"
-onready var tex_rect = $"paste_stuff/paste_select/VSplitContainer/TextureRect"
+onready var tex_rect = $"paste_stuff/paste_select/VBoxContainer/TextureRect"
 onready var paste_button = $"paste_stuff/button_container/paste_button"
 onready var color_picker_button = $"paste_stuff/button_container/picker_button"
 onready var color_picker = $"color_picker"
 onready var canvaslayer = $"paste_stuff"
 
-var menu_block = true
+var filter_switch
+
+var menu_block = true setget on_block_change #wooo i finally found an use for setget
+var filter_mode = Image.INTERPOLATE_NEAREST #...or, "no filter on resizing"
+
 
 var processed_image: Image
 var current_tilemap_path: String
@@ -46,9 +50,12 @@ func _ready():
 	InputMap.action_add_event("toggle_chalk_overlay", f4)
 	
 	if color_picker == null:
-		color_picker = get_node("color_picker")
+		color_picker = get_node("color_picker") #and the color picker takes aaages to appear
 		
-		
+	filter_switch = $"paste_stuff/paste_select/VBoxContainer/interpolate_switch"
+	filter_switch.connect("toggled", self, "on_filter_toggle")
+	
+	
 func _set_ui_busy(is_busy: bool): #this is a dumb hack
 	if paste_button:
 		paste_button.disabled = is_busy
@@ -69,7 +76,7 @@ func _thread_load_function(path: String):
 		print("Error loading image.")
 		return
 		
-	image.resize(200, 200, 0)
+	image.resize(200, 200, filter_mode)
 
 	call_deferred("_on_loading_finished", image)
 
@@ -141,7 +148,7 @@ func actually_paint_tiles_on_map(canv_path):
 	_set_ui_busy(false)
 
 func _input(event):
-	if Input.is_action_just_pressed("toggle_chalk_overlay"):
+	if Input.is_action_just_pressed("toggle_chalk_overlay") and menu_block == false:
 		if canvaslayer.visible == true:
 			canvaslayer.visible = false
 			
@@ -164,4 +171,20 @@ func color_button_pressed(): #this flipflopping is also cringe
 	elif color_picker.visible == true:
 		color_picker.visible = false
 		
+func on_block_change(new_block_state):
+	print("received a set call, new menu block state: " + str(new_block_state))
+	menu_block = new_block_state
+	print("was setting the new block state successful? " + str(menu_block == new_block_state))
+	if new_block_state == true:
+		color_picker.visible = false
+		canvaslayer.visible = false
+		
+func on_filter_toggle(toggle_state):
+	if toggle_state == true:
+		print("filter toggle set to on, switching to lanczos interpolation")
+		filter_mode = Image.INTERPOLATE_LANCZOS
+		
+	elif toggle_state == false:
+		print("filter toggle set to off, switching to no interpolation")
+		filter_mode = Image.INTERPOLATE_NEAREST
 

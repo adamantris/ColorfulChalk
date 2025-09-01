@@ -17,8 +17,8 @@
 extends Button
 
 
-onready var paste_select = $"../../.."
-onready var loader_logic = $"../../../../.." #doing that kind of relative paths is cursed but too bad!
+onready var paste_select = $"/root/adamantrisColorfulChalk/UI/paste_stuff/paste_select"
+onready var loader_logic = $"/root/adamantrisColorfulChalk/UI" 
 onready var main = get_node("/root/adamantrisColorfulChalk")
 onready var canv_id = self.name.get_slice("_", 1)
 func _ready():

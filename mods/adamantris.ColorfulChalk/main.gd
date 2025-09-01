@@ -17,6 +17,8 @@
 extends Node
 
 signal picker_visible
+signal tileset_update(new_tileset)
+
 
 export var color_id: Dictionary
 
@@ -27,7 +29,7 @@ enum send_type{
 }
 
 const COLOR_CHANNEL = 10
-const protocol_version = 4
+const protocol_version = 5
 
 onready var canv_paths = {
 	"1": "/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas/Viewport/TileMap",
@@ -39,11 +41,15 @@ onready var canv_paths = {
 onready var Lure = get_node("/root/SulayreLure")
 onready var Players = get_node_or_null("/root/ToesSocks/Players")
 onready var Chat = get_node_or_null("/root/ToesSocks/Chat")
-var loader_logic
+
+
 
 
 onready var color_picker = preload("res://mods/adamantris.ColorfulChalk/scenes/color_picker.tscn")
 onready var file_scene = preload("res://mods/adamantris.ColorfulChalk/scenes/image_loader/file_dialog.tscn")
+onready var vanilla_canvas = preload("res://Scenes/Entities/ChalkCanvas/chalk_canvas.tscn") #holy shit i finally found the reason for colors not matching the picker
+
+var loader_logic
 
 var canvas_TileMap: TileMap
 var canvas_TileSet: TileSet
@@ -51,6 +57,7 @@ var color_dict: Dictionary = {}
 var selected_chalk_color
 var Lure_chalk_dict
 var Lure_chalk_resource
+var current_tileset: TileSet
 
 var mod_user_list = []
 
@@ -66,12 +73,25 @@ var tile_thread: Thread
 
 export onready var atlas_img: Image
 export onready var atlas_tex: ImageTexture
+
 var color_slot = 0
 var button_id = 0
 
+#var vanilla_canv
 
 func _ready():
-	yield(get_tree().create_timer(1.0), "timeout")
+	
+#	vanilla_canv = vanilla_canvas.instance()
+#	var vanilla_canv_mesh = vanilla_canv.get_node("MeshInstance")
+#	print("got an instance of chalk canvas: " + str(vanilla_canv_mesh))
+#	var vanilla_canv_mat = vanilla_canv_mesh.get_active_material(0)
+#	print("got a duplicate of the spatialmaterial: " + str(vanilla_canv_mat))
+#	vanilla_canv_mat.set_flag(SpatialMaterial.FLAG_UNSHADED, true)
+#	vanilla_canv_mat.set_flag(SpatialMaterial.FLAG_DONT_RECEIVE_SHADOWS, true)
+#	vanilla_canv_mat.set_flag(SpatialMaterial.FLAG_ALBEDO_TEXTURE_FORCE_SRGB, true)
+#	var save = ResourceSaver.save("res://Scenes/Entities/ChalkCanvas/chalk_canvas.tscn", vanilla_canv)
+#	print(save)
+	
 	
 	self.add_child(file_scene.instance())
 	self.add_child(color_picker.instance())
@@ -87,6 +107,9 @@ func _ready():
 	Lure.add_content("adamantris.ColorfulChalk", "Rainbow Chalk", "res://mods/adamantris.ColorfulChalk/resources/chalk_rainbow.tres", [Lure.LURE_FLAGS.FREE_UNLOCK])
 	
 	loader_logic = $"UI"
+
+	
+	
 	
 	atlas_img = Image.new()
 	atlas_img.create(512, 512, false, Image.FORMAT_RGBA8)
@@ -104,39 +127,41 @@ func _ready():
 	packet_mutex = Mutex.new()
 	packet_thread = Thread.new()
 	packet_thread.start(self, "read_packets")
+	print("after packet thread start")
 	
 	get_tree().connect("node_added", self, "on_node_add")
 	
 	
 func on_node_add(node):
 	if node.get_path() == "/root/world":
+		print("we joined a world, lets remove the block and activate the player left check")
 		loader_logic.menu_block = false
 		node.connect("tree_exiting", self, "on_node_exit")
 		world_node = node
 		
+		Lure_chalk_dict = Lure.item_list.get("adamantris.ColorfulChalk.Rainbow Chalk")
+		Lure_chalk_resource = Lure_chalk_dict.get("resource")
+		lobby_joined()
+		
+		canvas_TileMap = get_node("/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas/Viewport/TileMap")
+		canvas_TileSet = canvas_TileMap.get_tileset()
+		current_tileset = canvas_TileSet
+		
 func on_node_exit():
+	print("we are leaving from the world, lets disconnect and reactivate the block state")
 	world_node.disconnect("tree_exiting", self, "on_node_exit")
 	loader_logic.menu_block = true
 
 
+
 func _process(delta):
-	if not Players.in_game:
-		return
-	
 	packet_timer += delta
 	if packet_timer >= 0.2:
+		#print("packet timer over 0.2, posting")
 		packet_semaphore.post()
 		packet_timer = 0.0
 
-func ingame():
-	Lure_chalk_dict = Lure.item_list.get("adamantris.ColorfulChalk.Rainbow Chalk")
-	Lure_chalk_resource = Lure_chalk_dict.get("resource")
-	lobby_joined()
-	
-	canvas_TileMap = get_node("/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas/Viewport/TileMap")
-	canvas_TileSet = canvas_TileMap.get_tileset()
-	
-	#self.add_child(color_picker.instance())
+
 
 func chat_command(message: String, player, is_self):
 
@@ -304,11 +329,9 @@ func _apply_thread_results(results: Dictionary):
 		if atlas_tex_instance:
 			atlas_tex_instance.atlas = self.atlas_tex
 
-	# Apply changes to the game state
-	for path in canv_paths.values():
-		var map_node = get_node_or_null(path) as TileMap
-		if map_node:
-			map_node.tile_set = new_tileset
+	# send out the new tileset
+	current_tileset = new_tileset
+	emit_signal("tileset_update", current_tileset)
 	
 	self.canvas_TileSet = new_tileset # Also update old reference
 	self.atlas_img = new_atlas_img
@@ -341,12 +364,13 @@ func lobby_joined():
 	var hello_poolbyte = var2bytes(["color_handshake", color_handshake, protocol_version])
 	for connection_entry in Network.OPEN_CONNECTIONS:
 		var steam_id = connection_entry
+		print("OHELLO DO YOU HAVE A MOD WITH STEAM ID " + str(steam_id))
 		Steam.sendMessageToUser(str(steam_id), hello_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
 
-func request_dict():
+func request_img():
 	if mod_user_list.size() >= 1:
 		yield(get_tree().create_timer(0.5), "timeout")
-		var request_poolbyte = var2bytes(["requested_dict", "pls send dict", protocol_version])
+		var request_poolbyte = var2bytes(["requesting_img", "pls_send_img", protocol_version])
 		Steam.sendMessageToUser(mod_user_list[0], request_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
 
 func player_removed(player_node):
@@ -374,50 +398,137 @@ func compute_hash(hash_data) -> PoolByteArray:
 	hash_compute.update(hash_data)
 	return hash_compute.finish()
 	
+func send_img(steam_id): 
+	# compressed poolbytes content:
+	# 0 = image poolbytes
+	# 1 = image poolbytes hash
+	# 2 = color dict
+	# 3 = color slot counter
+	atlas_img.lock()
+	var img_poolbytes = atlas_img.get_data() #sending a whole image over steam lets go
+	atlas_img.unlock()
+	var img_poolbytes_hash = compute_hash(img_poolbytes)
+	
+	var combined_data_poolbytes = var2bytes([img_poolbytes, img_poolbytes_hash, color_dict, color_slot])
+	var combined_data_size = combined_data_poolbytes.size()
+	var compressed_data_poolbytes = combined_data_poolbytes.compress(File.COMPRESSION_ZSTD) #ZStandart compression because why not, i didnt try it
+	var final_poolbytes = var2bytes(["receive_img", compressed_data_poolbytes, protocol_version, combined_data_size]) 
+	#what a poolbyte orgy, but i hope this is good enough for initial sync
+	Steam.sendMessageToUser(steam_id, final_poolbytes, send_type.RELIABLE, COLOR_CHANNEL)
+	
+	
+func recreate_img(decompressed_data_poolbytes):
+	
+	var packet_img_hash = decompressed_data_poolbytes[1]
+	var img_data = decompressed_data_poolbytes[0]
+	var recalculated_hash = compute_hash(img_data)
+	
+	if recalculated_hash != packet_img_hash:
+		print("The locally calculated hash and the one in the packet dont match! panic!")
+		return
+	else:
+		var network_img: Image = Image.new()
+		atlas_img.lock()
+		network_img.lock()
+		atlas_img = network_img.create_from_data(512, 512, false, Image.FORMAT_RGBA8, img_data)
+		atlas_tex.set_data(atlas_img)
+		print("we did the image setting update woo")
+	
+	
 func read_packets():
+	print("packet thread started")
 	while true:
 		packet_semaphore.wait()
 		packet_mutex.lock()
-		var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 10)
+		var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 50) #reading for 50 messages
 		packet_mutex.unlock()
 		
+		if message_array.empty() == true:
+			#print("Steam Message Array is empty. Continuing.")
+			continue
+		
 		for message in message_array:
-			var decoded = bytes2var(message.get("payload"))
+			
+			# Networking is such an awful mess. There's always something broken about the packets,
+			# so i'm gonna be extremely defensive about it. hopefully it running on a seperate thread helps!
+			
+
+				
+			if typeof(message_array) != TYPE_ARRAY:
+				print("Steam Message Array is malformed. Discarding.")
+				continue
+			
+			elif typeof(message) != TYPE_DICTIONARY:
+				print("Message isn't a dict. Discarding.")
+				continue
+				
+			elif typeof(message.get("identity")) != TYPE_STRING or message.get("identity") == null:
+				print("Identity string is broken. Discarding.")
+				continue
+
 			var sender_steam_id = message.get("identity").get_slice(":", 1)
+			var decoded = bytes2var(message.get("payload"))
+			
+#			if 
+			
+			if typeof(decoded) != TYPE_ARRAY:
+				print("Decoded payload isn't an array. Discarding.")
+				continue
 			
 			if decoded.size() < 3 or decoded[2] != protocol_version:
 				print("Discarding packet with wrong protocol version.")
 				continue
+				
 
 			var packet_command = decoded[0]
+			
+			
+			if decoded[0] == null or typeof(decoded[0]) != TYPE_STRING:
+				print("No proper command received in packet. Discarding.")
+				continue
+				
+				
 			match packet_command:
 				"color_handshake":
 					var response_poolbyte = var2bytes(["handshake_response", "hello_back", protocol_version])
 					packet_mutex.lock()
 					if not sender_steam_id in mod_user_list:
-						mod_user_list.append(sender_steam_id)
+						mod_user_list.call_deferred("append", sender_steam_id)
 					packet_mutex.unlock()
 					Steam.call_deferred("sendMessageToUser", sender_steam_id, response_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
 				
 				"handshake_response":
 					packet_mutex.lock()
 					if not sender_steam_id in mod_user_list:
-						mod_user_list.append(sender_steam_id)
+						mod_user_list.call_deferred("append", sender_steam_id)
 					packet_mutex.unlock()
-					request_dict()
+					call_deferred("request_img")
 				
-				"requested_dict":
-					var dict_poolbyte = var2bytes(["received_dict", color_dict, protocol_version])
-					Steam.call_deferred("sendMessageToUser", sender_steam_id, dict_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
-				
-				"received_dict":
-					var received_dict = decoded[1]
+				"requesting_img":
+						call_deferred("send_img", sender_steam_id)
+						
+				"receive_img":
+					var compressed_data_poolbytes: PoolByteArray = decoded[1]
+					var uncompressed_size = decoded[3]
+					var decompressed_data_poolbytes = compressed_data_poolbytes.decompress(uncompressed_size, File.COMPRESSION_ZSTD)
+					var received_dict = decompressed_data_poolbytes[2]
 					var new_colors_from_net = []
 					for color_string in received_dict.keys():
 						if not color_dict.has(color_string):
 							new_colors_from_net.append(Color(color_string))
 					if not new_colors_from_net.empty():
 						call_deferred("_apply_thread_results", {"new_color_map": received_dict})
+					
+					#call_deferred("recreate_img", decompressed_data_poolbytes)
+					
+				#				"requested_dict":
+#					var dict_poolbyte = var2bytes(["received_dict", color_dict, protocol_version])
+#					Steam.call_deferred("sendMessageToUser", sender_steam_id, dict_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
+#
+#				"received_dict":
+
+
+
 
 				"create_new_color":
 					var remote_color_dict = decoded[1]
@@ -427,3 +538,8 @@ func read_packets():
 							new_colors_from_net.append(Color(color_string))
 					if not new_colors_from_net.empty():
 						call_deferred("_apply_thread_results", {"new_color_map": remote_color_dict})
+						
+
+						
+				"":
+					pass
