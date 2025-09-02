@@ -11,6 +11,7 @@
 script = ExtResource( 3 )
 
 [node name="paste_stuff" type="CanvasLayer" parent="."]
+visible = false
 
 [node name="FileDialog" type="FileDialog" parent="paste_stuff"]
 visible = true
@@ -50,7 +51,7 @@ alignment = 1
 
 [node name="TextureRect" type="TextureRect" parent="paste_stuff/paste_select/VBoxContainer"]
 margin_right = 280.0
-margin_bottom = 250.0
+margin_bottom = 249.0
 rect_min_size = Vector2( 200, 200 )
 rect_pivot_offset = Vector2( 135, 124 )
 mouse_filter = 0
@@ -63,9 +64,9 @@ stretch_mode = 6
 
 [node name="interpolate_switch" type="CheckButton" parent="paste_stuff/paste_select/VBoxContainer"]
 show_behind_parent = true
-margin_top = 254.0
+margin_top = 253.0
 margin_right = 280.0
-margin_bottom = 294.0
+margin_bottom = 293.0
 hint_tooltip = "This will smooth out lines when downsizing larger images. Use this when you are pasting non-pixel art!"
 focus_mode = 0
 size_flags_vertical = 0
@@ -74,9 +75,9 @@ text = "Toggle Scale Filter"
 align = 1
 
 [node name="HBoxContainer" type="HBoxContainer" parent="paste_stuff/paste_select/VBoxContainer"]
-margin_top = 298.0
+margin_top = 297.0
 margin_right = 280.0
-margin_bottom = 357.0
+margin_bottom = 356.0
 rect_pivot_offset = Vector2( 46, 10 )
 mouse_filter = 0
 size_flags_vertical = 3
@@ -130,22 +131,79 @@ margin_bottom = 34.0
 size_flags_vertical = 3
 text = "toggle color picker"
 
-[node name="paste_button" type="Button" parent="paste_stuff/button_container"]
+[node name="HSplitContainer" type="HSplitContainer" parent="paste_stuff/button_container"]
 margin_top = 38.0
 margin_right = 229.0
 margin_bottom = 72.0
 size_flags_vertical = 3
+
+[node name="paste_button" type="Button" parent="paste_stuff/button_container/HSplitContainer"]
+margin_right = 108.0
+margin_bottom = 34.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
 text = "load file"
 script = ExtResource( 2 )
+
+[node name="save_button" type="Button" parent="paste_stuff/button_container/HSplitContainer"]
+margin_left = 120.0
+margin_right = 229.0
+margin_bottom = 34.0
+size_flags_horizontal = 3
+text = "save file"
+
+[node name="save_select" type="PopupPanel" parent="paste_stuff"]
+visible = true
+margin_left = 1486.0
+margin_top = 717.0
+margin_right = 1749.0
+margin_bottom = 786.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="paste_stuff/save_select"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="sav_1" type="Button" parent="paste_stuff/save_select/HBoxContainer"]
+margin_right = 62.0
+margin_bottom = 69.0
+size_flags_horizontal = 3
+text = "1"
+
+[node name="sav_2" type="Button" parent="paste_stuff/save_select/HBoxContainer"]
+margin_left = 66.0
+margin_right = 129.0
+margin_bottom = 69.0
+size_flags_horizontal = 3
+text = "2"
+
+[node name="sav_3" type="Button" parent="paste_stuff/save_select/HBoxContainer"]
+margin_left = 133.0
+margin_right = 196.0
+margin_bottom = 69.0
+size_flags_horizontal = 3
+text = "3"
+
+[node name="sav_4" type="Button" parent="paste_stuff/save_select/HBoxContainer"]
+margin_left = 200.0
+margin_right = 263.0
+margin_bottom = 69.0
+size_flags_horizontal = 3
+text = "4"
+
+[node name="Label" type="Label" parent="paste_stuff/save_select"]
+margin_right = 40.0
+margin_bottom = 14.0
 
 [node name="color_picker" type="CanvasLayer" parent="."]
 visible = false
 
 [node name="PanelContainer" type="PanelContainer" parent="color_picker"]
-margin_left = 1552.0
-margin_top = 385.0
-margin_right = 1859.0
-margin_bottom = 703.0
+margin_left = 1467.0
+margin_top = 310.0
+margin_right = 1774.0
+margin_bottom = 628.0
 rect_pivot_offset = Vector2( 154, 159 )
 mouse_filter = 2
 
@@ -171,10 +229,10 @@ input_pass_on_modal_close_click = false
 show_behind_parent = true
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 9.0
-margin_top = 16.0
-margin_right = 22.367
-margin_bottom = 142.327
+margin_left = -17.0
+margin_top = -4.0
+margin_right = -3.0
+margin_bottom = 151.808
 mouse_filter = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
@@ -195,3 +253,9 @@ margin_right = 293.0
 margin_bottom = 304.0
 size_flags_stretch_ratio = 0.06
 text = "Save"
+
+[connection signal="pressed" from="paste_stuff/button_container/HSplitContainer/save_button" to="." method="_on_save_button_pressed"]
+[connection signal="pressed" from="paste_stuff/save_select/HBoxContainer/sav_1" to="." method="on_save" binds= [ "1" ]]
+[connection signal="pressed" from="paste_stuff/save_select/HBoxContainer/sav_2" to="." method="on_save" binds= [ "2" ]]
+[connection signal="pressed" from="paste_stuff/save_select/HBoxContainer/sav_3" to="." method="on_save" binds= [ "3" ]]
+[connection signal="pressed" from="paste_stuff/save_select/HBoxContainer/sav_4" to="." method="on_save" binds= [ "4" ]]

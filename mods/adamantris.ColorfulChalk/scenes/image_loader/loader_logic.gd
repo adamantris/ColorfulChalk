@@ -16,17 +16,18 @@
 
 extends Node
 
-
+signal save_button_pressed(id)
 
 #this is an extremely convoluted mess and i hate it
 onready var main = get_node("/root/adamantrisColorfulChalk")
 onready var paste_select = $"paste_stuff/paste_select"
 onready var file_dialog = $"paste_stuff/FileDialog"
 onready var tex_rect = $"paste_stuff/paste_select/VBoxContainer/TextureRect"
-onready var paste_button = $"paste_stuff/button_container/paste_button"
+onready var paste_button = $"paste_stuff/button_container/HSplitContainer/paste_button"
 onready var color_picker_button = $"paste_stuff/button_container/picker_button"
 onready var color_picker = $"color_picker"
 onready var canvaslayer = $"paste_stuff"
+onready var save_select = $"paste_stuff/save_select"
 
 var filter_switch
 
@@ -55,6 +56,35 @@ func _ready():
 	filter_switch = $"paste_stuff/paste_select/VBoxContainer/interpolate_switch"
 	filter_switch.connect("toggled", self, "on_filter_toggle")
 	
+	self.connect("save_button_pressed", self, "on_save")
+	
+func on_save(id):
+	main.atlas_img.lock()
+	var selected_canv: TileMap = get_node(main.canv_paths.get(id))
+	print("saving canvas " + str(selected_canv))
+	var temp_img = Image.new()
+	temp_img.create(200, 200, false, Image.FORMAT_RGBA8)
+	temp_img.lock()
+	var tileset = selected_canv.tile_set
+	print("tileset is: " + str(tileset))
+	var set_cells = selected_canv.get_used_cells()
+	#print("set cells without world_to_map: " + str(set_cells[0]))
+	#print("set cells are: " + str(set_cells))
+	#print("set cells with world_to_map: " + str(selected_canv.world_to_map(set_cells[0])))
+	for cell in set_cells: #one cell is one vec2 on the tilemap
+		var cell_id = selected_canv.get_cellv(cell)
+		var cell_atlas_region = tileset.tile_get_region(cell_id)
+		#print("region is: " + str(cell_atlas_region))
+		var pixel_color = main.atlas_img.get_pixelv(cell_atlas_region.position)
+		#print("got color: " + pixel_color.to_html(), " , color object: " + str(pixel_color))
+		temp_img.set_pixelv(cell, pixel_color)
+		
+	var date = Time.get_datetime_dict_from_system()
+		
+	#this is the most incomprehensible string ive ever written, its supposed to be "canvas_[id]_[day]_[month]_[hour][minute][second].png" glued together
+	temp_img.save_png("user://colorfulchalk_images/canvas_" + str(id) + "_" + str(date.get("day")) + "_" + str(date.get("month")) + "_" + str(date.get("hour")) + str(date.get("minute")) + str(date.get("second")) + ".png")
+	main.atlas_img.unlock()
+	temp_img.unlock()
 	
 func _set_ui_busy(is_busy: bool): #this is a dumb hack
 	if paste_button:
@@ -188,3 +218,8 @@ func on_filter_toggle(toggle_state):
 		print("filter toggle set to off, switching to no interpolation")
 		filter_mode = Image.INTERPOLATE_NEAREST
 
+
+
+func _on_save_button_pressed():
+	 # Replace with function body.
+	save_select.popup()
