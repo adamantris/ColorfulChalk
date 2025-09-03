@@ -4,7 +4,7 @@ extends Button
 # Declare member variables here. Examples:
 # var a = 2
 # var b = "text"
-onready var dialog = $"../../FileDialog"
+onready var dialog = $"../../../FileDialog"
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
