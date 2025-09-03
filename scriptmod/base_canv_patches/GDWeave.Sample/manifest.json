@@ -1,0 +1,11 @@
+{
+  "Id": "adamantris.ColorfulChalk",
+  "AssemblyPath": "adamantris.ColorfulChalk.dll",
+  "Metadata": {
+    "Name": "ColorfulChalk",
+    "Author": "adamantris",
+    "Version": "0.0.9",
+    "Description": "[This description is shown in some mod managers and might also be used in-game in Mod Settings menu]",
+    "Homepage": "https://ko-fi.com/toooes"
+  }
+}
