@@ -1,4 +1,4 @@
-# ColorfulChalk, a mod that extends chalk colors and adds save/load functionality.
+# ChromaChalk, a mod that extends chalk colors and adds save/load functionality.
 # Copyright (C) 2025 adamantris
 #
 # This program is free software: you can redistribute it and/or modify
@@ -21,16 +21,16 @@ extends ColorPicker
 # var a = 2
 # var b = "text"
 
-onready var save_button = $"../../Button"
-onready var main = $"/root/adamantrisColorfulChalk"
-onready var color_picker = $"/root/adamantrisColorfulChalk/UI/color_picker"
-onready var loader_logic = $"/root/adamantrisColorfulChalk/UI"
+#onready var save_button = $"../../Button"
+onready var main = $"/root/adamantrisChromaChalk"
+onready var color_picker = $"/root/adamantrisChromaChalk/UI/color_picker"
+onready var loader_logic = $"/root/adamantrisChromaChalk/UI"
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	print("did i find a button? " + str(save_button))
+	#print("did i find a button? " + str(save_button))
 	main.connect("picker_visible", self, "picker_visible")
-	save_button.connect("pressed", self, "button_pressed")
+	#save_button.connect("pressed", self, "button_pressed")
 	pass # Replace with function body.
 
 

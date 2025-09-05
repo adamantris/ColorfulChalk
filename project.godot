@@ -10,7 +10,7 @@ config_version=4
 
 [application]
 
-config/name="adamantris.ColorfulChalk"
+config/name="adamantris.ChromaChalk"
 config/icon="res://icon.png"
 
 [gui]

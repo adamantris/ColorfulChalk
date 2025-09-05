@@ -1,4 +1,4 @@
-# ColorfulChalk, a mod that extends chalk colors and adds save/load functionality.
+# ChromaChalk, a mod that extends chalk colors and adds save/load functionality.
 # Copyright (C) 2025 adamantris
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@ extends Node
 signal save_button_pressed(id)
 
 #this is an extremely convoluted mess and i hate it
-onready var main = get_node("/root/adamantrisColorfulChalk")
+onready var main = get_node("/root/adamantrisChromaChalk")
 onready var paste_select = $"paste_stuff/paste_select"
 onready var file_dialog = $"paste_stuff/FileDialog"
 onready var tex_rect = $"paste_stuff/paste_select/VBoxContainer/TextureRect"
@@ -39,6 +39,7 @@ var processed_image: Image
 var current_tilemap_path: String
 
 var load_thread: Thread
+var pixel_thread: Thread
 
 func _ready():
 	
@@ -82,7 +83,7 @@ func on_save(id):
 	var date = Time.get_datetime_dict_from_system()
 		
 	#this is the most incomprehensible string ive ever written, its supposed to be "canvas_[id]_[day]_[month]_[hour][minute][second].png" glued together
-	temp_img.save_png("user://colorfulchalk_images/canvas_" + str(id) + "_" + str(date.get("day")) + "_" + str(date.get("month")) + "_" + str(date.get("hour")) + str(date.get("minute")) + str(date.get("second")) + ".png")
+	temp_img.save_png("user://ChromaChalk_images/canvas_" + str(id) + "_" + str(date.get("day")) + "_" + str(date.get("month")) + "_" + str(date.get("hour")) + str(date.get("minute")) + str(date.get("second")) + ".png")
 	main.atlas_img.unlock()
 	temp_img.unlock()
 	
@@ -112,9 +113,8 @@ func _thread_load_function(path: String):
 
 func _on_loading_finished(loaded_img: Image):
 	processed_image = loaded_img
-	
 	var image_tex = ImageTexture.new()
-	image_tex.create_from_image(processed_image)
+	image_tex.create_from_image(loaded_img)
 	
 
 	
@@ -132,27 +132,53 @@ func create_one_color(color):
 
 # This is called by the UI button. It starts the whole process.
 func paste_image(id):
-	
-	
+	pixel_thread = Thread.new()
+	main.button_id = id
+	paste_select.visible = false
 	if not processed_image: return
 	
-	_set_ui_busy(true)
-	
-	var tilemap_path = main.canv_paths.get(id)
-	if not tilemap_path:
-		_set_ui_busy(false)
-		return
+#	_set_ui_busy(true)
+#
+#
+#	if not tilemap_path:
+#		_set_ui_busy(false)
+#		return
 		
 	var all_pixels = []
 	processed_image.lock()
-	for y in range(processed_image.get_height()):
-		for x in range(processed_image.get_width()):
-			all_pixels.append(processed_image.get_pixel(x, y))
+	pixel_thread.start(self, "gather_pixel_data", [processed_image, str(id)])
+	#pixel_thread.wait_to_finish()
+#	while pixel_thread.is_alive():
+#		#print("thread is alive, waiting")
+#		continue
+#	all_pixels = pixel_thread.wait_to_finish()
+#	print("pixel gatherer thread finished, collected pixels: " + str(all_pixels))
 	processed_image.unlock()
 	
-	var data_for_main = { "pixels": all_pixels, "loader_path": self.get_path(), "tilemap_path": tilemap_path }
-	main.add_color_data(data_for_main)
+#	var data_for_main = { "pixels": all_pixels, "loader_path": self.get_path(), "tilemap_path": tilemap_path }
+#	main.add_color_data(data_for_main)
 
+func gather_pixel_data(data_array):
+	var all_pixels = []
+	var img = data_array[0]
+	var id = data_array[1]
+	img.lock()
+	for y in range(img.get_height()):
+		for x in range(img.get_width()):
+			all_pixels.append(img.get_pixel(x, y))
+	img.unlock()
+	call_deferred("use_pixel_data", all_pixels, id)
+	
+func use_pixel_data(pixel_array, id):
+
+
+	print("i assume the thread is marked as dead now? " + str(pixel_thread.is_alive()))
+	pixel_thread.wait_to_finish()
+	print("received id: " + id)
+	#print("this b color array: " + str(pixel_array))
+	var tilemap_path = main.canv_paths.get(id)
+	var data_for_main = { "pixels": pixel_array, "loader_path": self.get_path(), "tilemap_path": tilemap_path }
+	main.add_color_data(data_for_main)
 
 func actually_paint_tiles_on_map(canv_path):
 	print("Callback received. Painting tiles...")
@@ -167,6 +193,9 @@ func actually_paint_tiles_on_map(canv_path):
 	for y in range(processed_image.get_height()):
 		for x in range(processed_image.get_width()):
 			var pixel_color = processed_image.get_pixel(x, y)
+			#if pixel_color.a8 == 0:
+				#print("pixel isnt visible, lets skip setting it")
+			#	continue
 			var hex_color = pixel_color.to_html(false)
 			var tile_id = main.color_dict.get(hex_color, -1)
 			if tile_id != -1:
@@ -175,6 +204,7 @@ func actually_paint_tiles_on_map(canv_path):
 	processed_image.unlock()
 	
 	print("Finished painting tiles. Re-enabling UI.")
+	
 	_set_ui_busy(false)
 
 func _input(event):
@@ -223,3 +253,11 @@ func on_filter_toggle(toggle_state):
 func _on_save_button_pressed():
 	 # Replace with function body.
 	save_select.popup()
+
+
+func paste_img(extra_arg_0):
+	pass # Replace with function body.
+
+
+func _on_paste_button_pressed():
+	file_dialog.popup_centered() # Replace with function body.

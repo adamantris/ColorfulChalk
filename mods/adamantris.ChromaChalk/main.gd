@@ -1,4 +1,4 @@
-# ColorfulChalk, a mod that extends chalk colors and adds save/load functionality.
+# ChromaChalk, a mod that extends chalk colors and adds save/load functionality.
 # Copyright (C) 2025 adamantris
 #
 # This program is free software: you can redistribute it and/or modify
@@ -31,12 +31,14 @@ enum send_type{
 const COLOR_CHANNEL = 10
 const protocol_version = 5
 
-onready var canv_paths = {
+const world_canv_paths = {
 	"1": "/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas/Viewport/TileMap",
 	"2": "/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas2/Viewport/TileMap",
 	"3": "/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas3/Viewport/TileMap",
 	"4": "/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas4/Viewport/TileMap"
 }
+
+var canv_paths #this might turn into a dict for world+prop canvases, i got an outline on how to support props in my head
 
 onready var Lure = get_node("/root/SulayreLure")
 onready var Players = get_node_or_null("/root/ToesSocks/Players")
@@ -44,16 +46,17 @@ onready var Chat = get_node_or_null("/root/ToesSocks/Chat")
 
 
 
+onready var file_scene = preload("res://mods/adamantris.ChromaChalk/scenes/image_loader/file_dialog.tscn")
+onready var API = preload("res://mods/adamantris.ChromaChalk/Color_API.gd")
+#onready var vanilla_canvas = preload("res://Scenes/Entities/ChalkCanvas/chalk_canvas.tscn") #holy shit i finally found the reason for colors not matching the picker
 
-onready var color_picker = preload("res://mods/adamantris.ColorfulChalk/scenes/color_picker.tscn")
-onready var file_scene = preload("res://mods/adamantris.ColorfulChalk/scenes/image_loader/file_dialog.tscn")
-onready var vanilla_canvas = preload("res://Scenes/Entities/ChalkCanvas/chalk_canvas.tscn") #holy shit i finally found the reason for colors not matching the picker
 
 var loader_logic
 
 var canvas_TileMap: TileMap
 var canvas_TileSet: TileSet
 var color_dict: Dictionary = {}
+var color_dict_remap: Dictionary = {}
 var selected_chalk_color
 var Lure_chalk_dict
 var Lure_chalk_resource
@@ -91,20 +94,21 @@ func _ready():
 #	vanilla_canv_mat.set_flag(SpatialMaterial.FLAG_ALBEDO_TEXTURE_FORCE_SRGB, true)
 #	var save = ResourceSaver.save("res://Scenes/Entities/ChalkCanvas/chalk_canvas.tscn", vanilla_canv)
 #	print(save)
-	
+	canv_paths = world_canv_paths.duplicate() #godot docs say i need to duplicate it, even as a const? idk
 	
 	self.add_child(file_scene.instance())
-	self.add_child(color_picker.instance())
+	self.add_child(API.new(), true)
+	#self.add_child(color_picker.instance())
 	
 	var file_manager = Directory.new()
-	if not file_manager.dir_exists("user://colorfulchalk_images"):
+	if not file_manager.dir_exists("user://ChromaChalk_images"):
 		print("Images folder doesn't exist, creating new folder.")
-		file_manager.make_dir("user://colorfulchalk_images")
+		file_manager.make_dir("user://ChromaChalk_images")
 	
 	Chat.connect("player_messaged", self, "chat_command")
 	Players.connect("ingame", self, "ingame")
 	Players.connect("player_removed", self, "player_removed")
-	Lure.add_content("adamantris.ColorfulChalk", "Rainbow Chalk", "res://mods/adamantris.ColorfulChalk/resources/chalk_rainbow.tres", [Lure.LURE_FLAGS.FREE_UNLOCK])
+	Lure.add_content("adamantris.ChromaChalk", "Rainbow Chalk", "res://mods/adamantris.ChromaChalk/resources/chalk_rainbow.tres", [Lure.LURE_FLAGS.FREE_UNLOCK])
 	
 	loader_logic = $"UI"
 
@@ -139,7 +143,7 @@ func on_node_add(node):
 		node.connect("tree_exiting", self, "on_node_exit")
 		world_node = node
 		
-		Lure_chalk_dict = Lure.item_list.get("adamantris.ColorfulChalk.Rainbow Chalk")
+		Lure_chalk_dict = Lure.item_list.get("adamantris.ChromaChalk.Rainbow Chalk")
 		Lure_chalk_resource = Lure_chalk_dict.get("resource")
 		lobby_joined()
 		
@@ -167,7 +171,7 @@ func chat_command(message: String, player, is_self):
 
 			
 	if is_self == true and message.begins_with("!debug_save"):
-		atlas_img.save_png("user://colorfulchalk_images/test.png")
+		atlas_img.save_png("user://ChromaChalk_images/test.png")
 		print("hopefully saved a png lol")
 	
 	
@@ -219,7 +223,7 @@ func chat_command(message: String, player, is_self):
 				
 			else:
 				print("no mod chalk found, sorry")
-		temp_image.save_png("user://colorfulchalk_images/canvas_" + str(int(rand_range(0.0, 100000.0))) + ".png")
+		temp_image.save_png("user://ChromaChalk_images/canvas_" + str(int(rand_range(0.0, 100000.0))) + ".png")
 		temp_image.unlock()
 		atlas_img.unlock()
 		
@@ -251,7 +255,9 @@ func add_color_data(color_data):
 		"atlas_img_duplicate": atlas_img.duplicate(),
 		"current_color_slot": color_slot
 	}
-	_thread_process_new_colors(thread_data)
+	tile_thread.start(self, "_thread_process_new_colors", thread_data)
+	print("did the process color thread start? " + str(tile_thread.is_alive()))
+	#_thread_process_new_colors(thread_data)
 
 func _thread_process_new_colors(data: Dictionary):
 	var pixels: Array = data.get("pixels")
@@ -262,6 +268,7 @@ func _thread_process_new_colors(data: Dictionary):
 	var atlas_img_duplicate: Image = data.get("atlas_img_duplicate")
 	var current_color_slot: int = data.get("current_color_slot")
 	
+	var new_color_remap: Dictionary = {}
 	var unique_new_colors = []
 	var seen_colors = {}
 	for color_html in existing_colors:
@@ -299,6 +306,7 @@ func _thread_process_new_colors(data: Dictionary):
 			tileset_duplicate.tile_set_region(new_tile_id, region)
 			
 			new_color_map[color_string] = new_tile_id
+			new_color_remap[new_tile_id] = color_string
 			current_color_slot += 1
 
 		atlas_img_duplicate.unlock()
@@ -307,17 +315,19 @@ func _thread_process_new_colors(data: Dictionary):
 		"new_tileset": tileset_duplicate,
 		"new_atlas_img": atlas_img_duplicate,
 		"new_color_map": new_color_map,
+		"new_color_remap": new_color_remap,
 		"new_color_slot": current_color_slot,
 		"loader_path": loader_path,
 		"tilemap_path": tilemap_path
 	}
-	_apply_thread_results(results)
+	call_deferred("_apply_thread_results", results)
 
 func _apply_thread_results(results: Dictionary):
 	print("Applying thread results to main game...")
 	var new_tileset = results.get("new_tileset")
 	var new_atlas_img = results.get("new_atlas_img")
 	var new_color_map = results.get("new_color_map")
+	var new_color_remap = results.get("new_color_remap")
 	var new_color_slot = results.get("new_color_slot")
 	var loader_path = results.get("loader_path")
 	var tilemap_path = results.get("tilemap_path")
@@ -331,14 +341,15 @@ func _apply_thread_results(results: Dictionary):
 
 	# send out the new tileset
 	current_tileset = new_tileset
-	emit_signal("tileset_update", current_tileset)
 	
+	emit_signal("tileset_update", current_tileset)
 	self.canvas_TileSet = new_tileset # Also update old reference
 	self.atlas_img = new_atlas_img
-	self.atlas_tex.create_from_image(self.atlas_img)
+	self.atlas_tex.set_data(self.atlas_img)
 	self.color_dict.merge(new_color_map, true)
+	self.color_dict_remap.merge(new_color_remap)
 	self.color_slot = new_color_slot
-	Lure_chalk_resource.action_params[1] = color_slot + 6 #this is a quick and dirty hack, the chalk is buggy as shit anyways
+	Lure_chalk_resource.action_params[1] = color_slot #this is a quick and dirty hack, the chalk is buggy as shit anyways
 
 	print("Finished applying results.")
 
@@ -356,7 +367,7 @@ func _apply_thread_results(results: Dictionary):
 		
 	if tile_thread and tile_thread.is_active():
 		tile_thread.wait_to_finish()
-	print("Process finished and thread cleaned up.")
+		print("Process finished and thread cleaned up.")
 
 
 func lobby_joined():

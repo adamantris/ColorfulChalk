@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=2]
 
-[ext_resource path="res://mods/adamantris.ColorfulChalk/scenes/picker.gd" type="Script" id=1]
+[ext_resource path="res://mods/adamantris.ChromaChalk/scenes/picker.gd" type="Script" id=1]
 
 [node name="color_picker" type="CanvasLayer"]
 visible = false
@@ -35,10 +35,10 @@ input_pass_on_modal_close_click = false
 show_behind_parent = true
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 9.0
-margin_top = 16.0
-margin_right = 23.0
-margin_bottom = 171.808
+margin_left = 13.0
+margin_top = 20.0
+margin_right = 27.0
+margin_bottom = 175.808
 mouse_filter = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
