@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/alexander/Desktop/adamantris.ColorfulChalk/scriptmod/base_canv_patches/GDWeave.Sample/adamantris.ColorfulChalk.csproj": {}
+    "/home/alexander/Desktop/adamantris.ChromaChalk/scriptmod/base_canv_patches/GDWeave.Sample/adamantris.ChromaChalk.csproj": {}
   },
   "projects": {
-    "/home/alexander/Desktop/adamantris.ColorfulChalk/scriptmod/base_canv_patches/GDWeave.Sample/adamantris.ColorfulChalk.csproj": {
+    "/home/alexander/Desktop/adamantris.ChromaChalk/scriptmod/base_canv_patches/GDWeave.Sample/adamantris.ChromaChalk.csproj": {
       "version": "0.0.9",
       "restore": {
-        "projectUniqueName": "/home/alexander/Desktop/adamantris.ColorfulChalk/scriptmod/base_canv_patches/GDWeave.Sample/adamantris.ColorfulChalk.csproj",
-        "projectName": "adamantris.ColorfulChalk",
-        "projectPath": "/home/alexander/Desktop/adamantris.ColorfulChalk/scriptmod/base_canv_patches/GDWeave.Sample/adamantris.ColorfulChalk.csproj",
+        "projectUniqueName": "/home/alexander/Desktop/adamantris.ChromaChalk/scriptmod/base_canv_patches/GDWeave.Sample/adamantris.ChromaChalk.csproj",
+        "projectName": "adamantris.ChromaChalk",
+        "projectPath": "/home/alexander/Desktop/adamantris.ChromaChalk/scriptmod/base_canv_patches/GDWeave.Sample/adamantris.ChromaChalk.csproj",
         "packagesPath": "/home/alexander/.nuget/packages/",
-        "outputPath": "/home/alexander/Desktop/adamantris.ColorfulChalk/scriptmod/base_canv_patches/GDWeave.Sample/obj/",
+        "outputPath": "/home/alexander/Desktop/adamantris.ChromaChalk/scriptmod/base_canv_patches/GDWeave.Sample/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/alexander/.nuget/NuGet/NuGet.Config"

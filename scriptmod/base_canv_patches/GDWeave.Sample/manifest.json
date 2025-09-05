@@ -1,8 +1,8 @@
 {
-  "Id": "adamantris.ColorfulChalk",
-  "AssemblyPath": "adamantris.ColorfulChalk.dll",
+  "Id": "adamantris.ChromaChalk",
+  "AssemblyPath": "adamantris.ChromaChalk.dll",
   "Metadata": {
-    "Name": "ColorfulChalk",
+    "Name": "ChromaChalk",
     "Author": "adamantris",
     "Version": "0.0.9",
     "Description": "[This description is shown in some mod managers and might also be used in-game in Mod Settings menu]",

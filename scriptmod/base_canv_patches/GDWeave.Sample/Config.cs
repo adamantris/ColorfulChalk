@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace adamantris.ColorfulChalk;
+namespace adamantris.ChromaChalk;
 
 public class Config(ConfigFileSchema configFile)
 {

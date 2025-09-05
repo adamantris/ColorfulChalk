@@ -13,9 +13,9 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("adamantris")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.0.9.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.9+9e6297a10dc55c7eb6a9669cec76453a4e1f7634")]
-[assembly: System.Reflection.AssemblyProductAttribute("adamantris.ColorfulChalk")]
-[assembly: System.Reflection.AssemblyTitleAttribute("adamantris.ColorfulChalk")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.9+9a119ff9dc18de8fcb3125799e1a6b3012e3db18")]
+[assembly: System.Reflection.AssemblyProductAttribute("adamantris.ChromaChalk")]
+[assembly: System.Reflection.AssemblyTitleAttribute("adamantris.ChromaChalk")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.0.9.0")]
 
 // Von der MSBuild WriteCodeFragment-Klasse generiert.

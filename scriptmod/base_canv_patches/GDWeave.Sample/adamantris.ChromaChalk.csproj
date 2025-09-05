@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>adamantris.ColorfulChalk</RootNamespace>
+    <RootNamespace>adamantris.ChromaChalk</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblySearchPaths>$(AssemblySearchPaths);$(GDWeavePath)/core;C:/Program Files (x86)/Steam/steamapps/common/WEBFISHING/GDWeave/core</AssemblySearchPaths>
-    <AssemblyName>adamantris.ColorfulChalk</AssemblyName>
+    <AssemblyName>adamantris.ChromaChalk</AssemblyName>
     <Version>0.0.9</Version>
     <Authors>adamantris</Authors>
     <Company>adamantris</Company>

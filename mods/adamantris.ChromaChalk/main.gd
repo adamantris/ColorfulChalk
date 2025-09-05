@@ -18,6 +18,8 @@ extends Node
 
 signal picker_visible
 signal tileset_update(new_tileset)
+signal custom_draw(color_id)
+signal custom_draw_stop
 
 
 export var color_id: Dictionary
@@ -109,7 +111,8 @@ func _ready():
 	Players.connect("ingame", self, "ingame")
 	Players.connect("player_removed", self, "player_removed")
 	Lure.add_content("adamantris.ChromaChalk", "Rainbow Chalk", "res://mods/adamantris.ChromaChalk/resources/chalk_rainbow.tres", [Lure.LURE_FLAGS.FREE_UNLOCK])
-	
+	Lure.register_action("adamantris.ChromaChalk", "_custom_paint", self, "_custom_paint")
+	Lure.register_action("adamantris.ChromaChalk", "_custom_paint_stop", self, "_custom_paint_stop")
 	loader_logic = $"UI"
 
 	
@@ -135,6 +138,13 @@ func _ready():
 	
 	get_tree().connect("node_added", self, "on_node_add")
 	
+func _custom_paint():
+	print("this is custom paint calling")
+	emit_signal("custom_draw", color_slot)
+	
+func _custom_paint_stop():
+	print("draw stop called")
+	emit_signal("custom_draw_stop")
 	
 func on_node_add(node):
 	if node.get_path() == "/root/world":
@@ -349,7 +359,7 @@ func _apply_thread_results(results: Dictionary):
 	self.color_dict.merge(new_color_map, true)
 	self.color_dict_remap.merge(new_color_remap)
 	self.color_slot = new_color_slot
-	Lure_chalk_resource.action_params[1] = color_slot #this is a quick and dirty hack, the chalk is buggy as shit anyways
+	#Lure_chalk_resource.action_params[1] = color_slot #this is a quick and dirty hack, the chalk is buggy as shit anyways
 
 	print("Finished applying results.")
 

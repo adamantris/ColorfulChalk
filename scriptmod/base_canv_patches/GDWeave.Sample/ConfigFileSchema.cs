@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace adamantris.ColorfulChalk;
+namespace adamantris.ChromaChalk;
 
 /// <summary>
 /// This class defines the shape of and default values for your mod's JSON config.
