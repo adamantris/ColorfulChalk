@@ -18,7 +18,7 @@ margin_top = 296.0
 margin_right = 1306.0
 margin_bottom = 710.0
 popup_exclusive = true
-window_title = "Datei öffnen"
+window_title = "Open a File"
 resizable = true
 dialog_text = "Select an image to paste!"
 mode = 0
@@ -196,7 +196,6 @@ margin_right = 259.0
 margin_bottom = 65.0
 
 [node name="color_picker" type="CanvasLayer" parent="."]
-visible = false
 
 [node name="PanelContainer" type="PanelContainer" parent="color_picker"]
 margin_left = 1467.0
@@ -210,7 +209,7 @@ mouse_filter = 2
 margin_left = 7.0
 margin_top = 7.0
 margin_right = 300.0
-margin_bottom = 311.0
+margin_bottom = 287.0
 rect_min_size = Vector2( 0.064, 0 )
 rect_clip_content = true
 mouse_filter = 2
@@ -221,6 +220,7 @@ margin_right = 293.0
 margin_bottom = 280.192
 rect_min_size = Vector2( 0, 280.192 )
 rect_clip_content = true
+focus_mode = 2
 mouse_filter = 2
 input_pass_on_modal_close_click = false
 
@@ -228,24 +228,29 @@ input_pass_on_modal_close_click = false
 show_behind_parent = true
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = -13.0
-margin_right = 1.0
-margin_bottom = 155.808
+margin_left = -5.0
+margin_top = 8.0
+margin_right = 17.0
+margin_bottom = 146.808
+focus_mode = 2
 mouse_filter = 2
+input_pass_on_modal_close_click = false
 size_flags_horizontal = 0
 size_flags_vertical = 0
+edit_alpha = false
 deferred_mode = true
 presets_enabled = false
 presets_visible = false
 script = ExtResource( 6 )
 
-[node name="icky_panel_to_block_unwanted_controls" type="Panel" parent="color_picker/PanelContainer/VBoxContainer/Control"]
-margin_left = -7.0
-margin_top = 280.0
+[node name="icky_panel_to_block_unwanted_controls" type="Panel" parent="color_picker/PanelContainer/VBoxContainer"]
+visible = false
+margin_top = 284.0
 margin_right = 293.0
-margin_bottom = 412.0
+margin_bottom = 284.0
 
 [node name="Button" type="Button" parent="color_picker/PanelContainer/VBoxContainer"]
+visible = false
 margin_top = 284.0
 margin_right = 293.0
 margin_bottom = 304.0
@@ -262,4 +267,6 @@ text = "Save"
 [connection signal="pressed" from="paste_stuff/save_select/HBoxContainer/sav_2" to="." method="on_save" binds= [ "2" ]]
 [connection signal="pressed" from="paste_stuff/save_select/HBoxContainer/sav_3" to="." method="on_save" binds= [ "3" ]]
 [connection signal="pressed" from="paste_stuff/save_select/HBoxContainer/sav_4" to="." method="on_save" binds= [ "4" ]]
+[connection signal="color_changed" from="color_picker/PanelContainer/VBoxContainer/Control/ColorPicker" to="color_picker/PanelContainer/VBoxContainer/Control/ColorPicker" method="_on_ColorPicker_color_changed"]
+[connection signal="hide" from="color_picker/PanelContainer/VBoxContainer/Control/ColorPicker" to="color_picker/PanelContainer/VBoxContainer/Control/ColorPicker" method="_on_ColorPicker_hide"]
 [connection signal="pressed" from="color_picker/PanelContainer/VBoxContainer/Button" to="color_picker/PanelContainer/VBoxContainer/Control/ColorPicker" method="button_pressed"]

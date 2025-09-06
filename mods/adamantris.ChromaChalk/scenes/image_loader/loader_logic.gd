@@ -34,6 +34,7 @@ var filter_switch
 var menu_block = true setget on_block_change #wooo i finally found an use for setget
 var filter_mode = Image.INTERPOLATE_NEAREST #...or, "no filter on resizing"
 
+var picker_button_was_pushed := false
 
 var processed_image: Image
 var current_tilemap_path: String
@@ -127,7 +128,7 @@ func _on_loading_finished(loaded_img: Image):
 	print("Image loading and texture creation complete.")
 
 func create_one_color(color):
-	var fake_color_dict = {"pixels": [color], "loader_path": self.get_path(), "tilemap_path": "meow"}
+	var fake_color_dict = {"pixels": [color], "loader_path": self.get_path(), "tilemap_path": "fart"}
 	main.add_color_data(fake_color_dict)
 
 # This is called by the UI button. It starts the whole process.
@@ -209,28 +210,43 @@ func actually_paint_tiles_on_map(canv_path):
 
 func _input(event):
 	if Input.is_action_just_pressed("toggle_chalk_overlay") and menu_block == false:
-		if canvaslayer.visible == true:
-			canvaslayer.visible = false
-			
-		elif canvaslayer.visible == false:
-			canvaslayer.visible = true
-			
+		canvaslayer.visible = !canvaslayer.visible
+
 		if (color_picker.visible or file_dialog.visible or paste_select.visible) == true:
 			color_picker.visible = false
 			file_dialog.visible = false
 			paste_select.visible = false
-		
-		
-		
+
+func _process(__):
+	if Input.is_action_pressed("toggle_cc_picker"):
+		show_color_picker()
+		var control: Control = color_picker.get_node("PanelContainer/VBoxContainer/Control")
+		control.grab_click_focus()
+		control.grab_focus()
+	else:
+		if not picker_button_was_pushed:
+			var control: Control = color_picker.get_node("PanelContainer/VBoxContainer/Control")
+			control.release_focus()
+			hide_color_picker()
+
+
+
 func color_button_pressed(): #this flipflopping is also cringe
-	
-		
 	if color_picker.visible == false:
-		color_picker.visible = true
-		
+		pass
 	elif color_picker.visible == true:
-		color_picker.visible = false
-		
+		pass
+	picker_button_was_pushed = !picker_button_was_pushed
+	color_picker.visible = !color_picker.visible
+	
+
+
+func hide_color_picker() -> void:
+	color_picker.visible = false
+func show_color_picker() -> void:
+	color_picker.visible = true
+
+
 func on_block_change(new_block_state):
 	print("received a set call, new menu block state: " + str(new_block_state))
 	menu_block = new_block_state
