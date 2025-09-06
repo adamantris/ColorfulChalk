@@ -43,9 +43,9 @@ const world_canv_paths = {
 var canv_paths #this might turn into a dict for world+prop canvases, i got an outline on how to support props in my head
 
 onready var Lure = get_node("/root/SulayreLure")
-onready var Players = get_node_or_null("/root/ToesSocks/Players")
-onready var Chat = get_node_or_null("/root/ToesSocks/Chat")
-
+onready var Players = get_node("/root/ToesSocks/Players")
+onready var Chat = get_node("/root/ToesSocks/Chat")
+onready var Hotkeys = get_node("/root/ToesSocks/Hotkeys")
 
 
 onready var file_scene = preload("res://mods/adamantris.ChromaChalk/scenes/image_loader/file_dialog.tscn")
@@ -115,21 +115,23 @@ func _ready():
 	Lure.register_action("adamantris.ChromaChalk", "_custom_paint_stop", self, "_custom_paint_stop")
 	loader_logic = $"UI"
 
-	
-	
-	
+
+
+
 	atlas_img = Image.new()
 	atlas_img.create(512, 512, false, Image.FORMAT_RGBA8)
-	
+
 	atlas_tex = ImageTexture.new()
 	atlas_tex.create_from_image(atlas_img)
 	atlas_tex.flags += Texture.FLAG_CONVERT_TO_LINEAR
-	
-	InputMap.add_action("toggle_picker")
-	var keyevent = InputEventKey.new()
-	keyevent.scancode = KEY_P
-	InputMap.action_add_event("toggle_picker", keyevent)
-	
+
+	Hotkeys.add({
+		"name": "toggle_cc_picker",
+		"label": "ChromaChalk Color Picker",
+		"key_code": KEY_P,
+		"repeat": false
+	})
+
 	packet_semaphore = Semaphore.new()
 	packet_mutex = Mutex.new()
 	packet_thread = Thread.new()

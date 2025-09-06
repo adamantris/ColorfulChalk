@@ -16,12 +16,8 @@
 
 extends ColorPicker
 
+const FAVORITE_COLOR :=  Color.royalblue
 
-# Declare member variables here. Examples:
-# var a = 2
-# var b = "text"
-
-#onready var save_button = $"../../Button"
 onready var main = $"/root/adamantrisChromaChalk"
 onready var color_picker = $"/root/adamantrisChromaChalk/UI/color_picker"
 onready var loader_logic = $"/root/adamantrisChromaChalk/UI"
@@ -30,8 +26,7 @@ onready var loader_logic = $"/root/adamantrisChromaChalk/UI"
 func _ready():
 	#print("did i find a button? " + str(save_button))
 	main.connect("picker_visible", self, "picker_visible")
-	#save_button.connect("pressed", self, "button_pressed")
-	pass # Replace with function body.
+	color = FAVORITE_COLOR
 
 
 func button_pressed():
@@ -39,11 +34,18 @@ func button_pressed():
 	#print("ayooooo we got a color signal " + color_string)
 	#main.global_color_string = color_string
 	loader_logic.create_one_color(color)
-	
+	loader_logic.picker_button_was_pushed = false
+	picker_visible()
+
 
 func picker_visible():
-	if color_picker.visible == false:
-		color_picker.visible = true
-		
-	elif color_picker.visible == true:
-		color_picker.visible = false
+	color_picker.visible = !color_picker.visible
+
+
+func _on_ColorPicker_hide():
+	prints("Picker hidden", color.to_html())
+	loader_logic.create_one_color(color)
+
+
+func _on_ColorPicker_color_changed(color):
+	loader_logic.create_one_color(color)
