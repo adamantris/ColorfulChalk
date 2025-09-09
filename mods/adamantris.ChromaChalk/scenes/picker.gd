@@ -35,10 +35,10 @@ func _ready():
 
 
 func button_pressed():
-	var color = self.color
+	#var color = self.color
 	#print("ayooooo we got a color signal " + color_string)
 	#main.global_color_string = color_string
-	loader_logic.create_one_color(color)
+	loader_logic.create_one_color(self.color)
 	
 
 func picker_visible():

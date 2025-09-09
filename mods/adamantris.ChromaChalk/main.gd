@@ -81,7 +81,7 @@ export onready var atlas_tex: ImageTexture
 
 var color_slot = 0
 var button_id = 0
-
+var selected_color_id = 0
 #var vanilla_canv
 
 func _ready():
@@ -140,7 +140,7 @@ func _ready():
 	
 func _custom_paint():
 	print("this is custom paint calling")
-	emit_signal("custom_draw", color_slot)
+	emit_signal("custom_draw", selected_color_id)
 	
 func _custom_paint_stop():
 	print("draw stop called")
@@ -250,20 +250,34 @@ func chat_command(message: String, player, is_self):
 
 
 func add_color_data(color_data):
+	
+	var single = false
+	
 	if tile_thread and tile_thread.is_active():
 		print("A tile creation process is already running. Ignoring new request.")
 		return
-
+	
+	if color_data.get("pixels").size() == 1:
+		var color_hex = color_data.get("pixels")[0].to_html(false) #eww
+		
+		print("this is for checking old colors. color received: " + color_hex + " , is it in dict? ")
+		if color_hex in color_dict:
+			selected_color_id = color_dict.get(color_hex)
+		
+		else:
+			single = true
+		
 	print("Starting background thread to process colors and tileset...")
 	tile_thread = Thread.new()
 	var thread_data = {
 		"pixels": color_data.get("pixels"),
-		"existing_colors": color_dict.keys(),
+		"existing_colors": color_dict.duplicate(),
 		"loader_path": color_data.get("loader_path"),
 		"tilemap_path": color_data.get("tilemap_path"),
 		"tileset_duplicate": canvas_TileSet.duplicate(),
 		"atlas_img_duplicate": atlas_img.duplicate(),
-		"current_color_slot": color_slot
+		"current_color_slot": color_slot,
+		"single": single
 	}
 	tile_thread.start(self, "_thread_process_new_colors", thread_data)
 	print("did the process color thread start? " + str(tile_thread.is_alive()))
@@ -271,17 +285,32 @@ func add_color_data(color_data):
 
 func _thread_process_new_colors(data: Dictionary):
 	var pixels: Array = data.get("pixels")
-	var existing_colors: Array = data.get("existing_colors")
+	var existing_colors_dict: Dictionary = data.get("existing_colors")
+	var existing_colors_keys: Array = existing_colors_dict.keys()
 	var loader_path = data.get("loader_path")
 	var tilemap_path = data.get("tilemap_path")
 	var tileset_duplicate: TileSet = data.get("tileset_duplicate")
 	var atlas_img_duplicate: Image = data.get("atlas_img_duplicate")
 	var current_color_slot: int = data.get("current_color_slot")
+	var single = data.get("single")
 	
 	var new_color_remap: Dictionary = {}
 	var unique_new_colors = []
 	var seen_colors = {}
-	for color_html in existing_colors:
+	var results
+	
+	if pixels.size() == 1:
+		print("pixel array size is only 1, checking if we already created color to set it")
+		var color_hex = pixels[0].to_html(false)
+		if color_hex in existing_colors_dict:
+			print("the received color already exists, we can skip the creation process. passing old ID")
+			print("old color id is: " + str(existing_colors_dict.get(color_hex)))
+			results = {"color_id": existing_colors_dict.get(color_hex)}
+			#atlas_img.unlock()
+			call_deferred("_apply_thread_results", results)
+			return
+	
+	for color_html in existing_colors_keys:
 		seen_colors[color_html] = true
 
 	for pixel_color in pixels:
@@ -318,22 +347,41 @@ func _thread_process_new_colors(data: Dictionary):
 			new_color_map[color_string] = new_tile_id
 			new_color_remap[new_tile_id] = color_string
 			current_color_slot += 1
+			
+			results = {
+				"new_tileset": tileset_duplicate,
+				"new_atlas_img": atlas_img_duplicate,
+				"new_color_map": new_color_map,
+				"new_color_remap": new_color_remap,
+				"new_color_slot": current_color_slot,
+				"loader_path": loader_path,
+				"tilemap_path": tilemap_path,
+				"single": single
+			}
+	
+	else:
+		print("no new colors found, setting drawing color to known color")
+		
+		
+		
+	atlas_img_duplicate.unlock()
 
-		atlas_img_duplicate.unlock()
 
-	var results = {
-		"new_tileset": tileset_duplicate,
-		"new_atlas_img": atlas_img_duplicate,
-		"new_color_map": new_color_map,
-		"new_color_remap": new_color_remap,
-		"new_color_slot": current_color_slot,
-		"loader_path": loader_path,
-		"tilemap_path": tilemap_path
-	}
 	call_deferred("_apply_thread_results", results)
 
 func _apply_thread_results(results: Dictionary):
 	print("Applying thread results to main game...")
+	
+	var color_id = results.get("color_id")
+	
+	if results.size() == 1: #because there is no new data, right?
+		print("theres no data but color id, setting drawing color")
+		selected_color_id = color_id
+		if tile_thread and tile_thread.is_active():
+			tile_thread.wait_to_finish()
+		return
+		
+		
 	var new_tileset = results.get("new_tileset")
 	var new_atlas_img = results.get("new_atlas_img")
 	var new_color_map = results.get("new_color_map")
@@ -341,6 +389,7 @@ func _apply_thread_results(results: Dictionary):
 	var new_color_slot = results.get("new_color_slot")
 	var loader_path = results.get("loader_path")
 	var tilemap_path = results.get("tilemap_path")
+	var single = results.get("single")
 
 	# Re-assign the atlas texture to all new tiles on the main thread
 	for color_string in new_color_map:
@@ -359,6 +408,9 @@ func _apply_thread_results(results: Dictionary):
 	self.color_dict.merge(new_color_map, true)
 	self.color_dict_remap.merge(new_color_remap)
 	self.color_slot = new_color_slot
+	
+	if single == true:
+		selected_color_id = color_slot + 6
 	#Lure_chalk_resource.action_params[1] = color_slot #this is a quick and dirty hack, the chalk is buggy as shit anyways
 
 	print("Finished applying results.")
