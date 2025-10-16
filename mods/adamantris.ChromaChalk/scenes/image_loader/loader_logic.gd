@@ -29,6 +29,9 @@ onready var color_picker = $"color_picker"
 onready var canvaslayer = $"paste_stuff"
 onready var save_select = $"paste_stuff/save_select"
 
+
+
+
 var filter_switch
 
 var menu_block = true setget on_block_change #wooo i finally found an use for setget
@@ -95,40 +98,41 @@ func _set_ui_busy(is_busy: bool): #this is a dumb hack
 
 func on_file_selected(path: String):
 	print("File selected, starting background loading thread for: " + path)
-	if load_thread and load_thread.is_active():
-		load_thread.wait_to_finish()
+	#if load_thread and load_thread.is_active():
+	#	load_thread.wait_to_finish()
 	
-	load_thread = Thread.new()
-	load_thread.start(self, "_thread_load_function", path)
+	main.pynode.load_img(path)
+	#load_thread = Thread.new()
+	#load_thread.start(self, "_thread_load_function", path)
 
-func _thread_load_function(path: String):
-	var image = Image.new()
-	if image.load(path) != OK:
-		print("Error loading image.")
-		return
-		
-	image.resize(200, 200, filter_mode)
+#func _thread_load_function(path: String):
+#	var image = Image.new()
+#	if image.load(path) != OK:
+#		print("Error loading image.")
+#		return
+#
+#	image.resize(200, 200, filter_mode)
 
-	call_deferred("_on_loading_finished", image)
+#	call_deferred("_on_loading_finished", image)
 
 func _on_loading_finished(loaded_img: Image):
 	processed_image = loaded_img
 	var image_tex = ImageTexture.new()
 	image_tex.create_from_image(loaded_img)
-	
-
-	
+#
+#
+#
 	tex_rect.set_texture(image_tex)
-	
+#
 	paste_select.popup()
-	
-	if load_thread:
-		load_thread.wait_to_finish()
-	print("Image loading and texture creation complete.")
+#
+#	if load_thread:
+#		load_thread.wait_to_finish()
+#	print("Image loading and texture creation complete.")
 
-func create_one_color(color):
-	var fake_color_dict = {"pixels": [color], "loader_path": self.get_path(), "tilemap_path": "meow"}
-	main.add_color_data(fake_color_dict)
+#func create_one_color(color):
+#	var fake_color_dict = {"pixels": [color], "loader_path": self.get_path(), "tilemap_path": "meow"}
+#	main.add_color_data(fake_color_dict)
 
 # This is called by the UI button. It starts the whole process.
 func paste_image(id):
@@ -158,16 +162,16 @@ func paste_image(id):
 #	var data_for_main = { "pixels": all_pixels, "loader_path": self.get_path(), "tilemap_path": tilemap_path }
 #	main.add_color_data(data_for_main)
 
-func gather_pixel_data(data_array):
-	var all_pixels = []
-	var img = data_array[0]
-	var id = data_array[1]
-	img.lock()
-	for y in range(img.get_height()):
-		for x in range(img.get_width()):
-			all_pixels.append(img.get_pixel(x, y))
-	img.unlock()
-	call_deferred("use_pixel_data", all_pixels, id)
+#func gather_pixel_data(data_array):
+#	var all_pixels = []
+#	var img = data_array[0]
+#	var id = data_array[1]
+#	img.lock()
+#	for y in range(img.get_height()):
+#		for x in range(img.get_width()):
+#			all_pixels.append(img.get_pixel(x, y))
+#	img.unlock()
+#	call_deferred("use_pixel_data", all_pixels, id)
 	
 func use_pixel_data(pixel_array, id):
 
@@ -180,27 +184,37 @@ func use_pixel_data(pixel_array, id):
 	var data_for_main = { "pixels": pixel_array, "loader_path": self.get_path(), "tilemap_path": tilemap_path }
 	main.add_color_data(data_for_main)
 
-func actually_paint_tiles_on_map(canv_path):
+func actually_paint_tiles_on_map(pixel_array):
 	print("Callback received. Painting tiles...")
-	var selected_tilemap = get_node(canv_path)
-	print("this is tilemap path: " + str(canv_path) + ", this is tilemap node: " + str(selected_tilemap))
+	var selected_tilemap = get_node(main.canv_paths["1"])
+#	print("this is tilemap path: " + str(canv_path) + ", this is tilemap node: " + str(selected_tilemap))
 	if not selected_tilemap:
 		_set_ui_busy(false)
 		return
 
 	var pos = selected_tilemap.world_to_map(selected_tilemap.global_transform.origin)
 	processed_image.lock()
-	for y in range(processed_image.get_height()):
-		for x in range(processed_image.get_width()):
-			var pixel_color = processed_image.get_pixel(x, y)
+	
+	
+	for entry in pixel_array:
+		var color_id = entry[0]
+		for pixel in entry[1]: 
+
+		
+
+			#var pixel_color = processed_image.get_pixel(x, y)
+			var pixel_coord = Vector2(pos.x, pos.y) + Vector2(pixel[0], pixel[1])
+			
+			selected_tilemap.set_cell(pixel_coord.x, pixel_coord.y, color_id)
+			
 			#if pixel_color.a8 == 0:
 				#print("pixel isnt visible, lets skip setting it")
 			#	continue
-			var hex_color = pixel_color.to_html(false)
-			var tile_id = main.color_dict.get(hex_color, -1)
-			if tile_id != -1:
-				var pixel_coord = Vector2(pos.x, pos.y) + Vector2(x, y)
-				selected_tilemap.set_cell(pixel_coord.x, pixel_coord.y, tile_id)
+			#var hex_color = pixel_color.to_html(false)
+#			var tile_id = main.color_dict.get(hex_color, -1)
+#			if tile_id != -1:
+#				var pixel_coord = Vector2(pos.x, pos.y) + Vector2(x, y)
+				
 	processed_image.unlock()
 	
 	print("Finished painting tiles. Re-enabling UI.")

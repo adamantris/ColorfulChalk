@@ -28,10 +28,10 @@ public class Mod : IMod
 								.Matching(TransformationPatternFactory.CreateGdSnippetPattern(
 									"""
 									if not controlled: return
-	
-									if held_item.empty(): return
-									var item_data = Globals.item_data[held_item["id"]]["file"]
-									"""
+
+										if held_item.empty(): return
+											var item_data = Globals.item_data[held_item["id"]]["file"]
+											"""
 									)
 								)
 								.With(
@@ -58,7 +58,7 @@ public class Mod : IMod
 				.AddRule(
 					new TransformationRuleBuilder()
 						// ! These names MUST be unique or your mod will throw an System.InvalidOperationException when loading !
-						.Named("Create a ref to my main node, a var for tilemap and a baby function to update the tileset")
+						.Named("Create required variables n stuff")
 						.Do(Operation.Append)
 						.Matching(
 							TransformationPatternFactory.CreateGlobalsPattern()
@@ -66,18 +66,41 @@ public class Mod : IMod
 						.With(
 							"""
 
-							onready var chalk_mod = get_node("/root/adamantrisChromaChalk")
-							var tilemap: TileMap
+							enum Vanilla {
+								WHITE = 0,
+								BLACK = 1,
+								RED = 2,
+								BLUE = 3,
+								YELLOW = 4,
+								RAINBOW = 5,
+								GREEN = 6,
+								ERASER = -1
+
+							}
+							//we dont support rainbow chalk, so its -1
+							const vanilla_color = {
+								0: Color(1, 0.933, 0.835, 1),
+								1: Color(0.02, 0.043, 0.082, 1),
+								2: Color(0.675, 0, 0.161, 1),
+								3: Color(0, 0.522, 0.514, 1),
+								4: Color(0.902, 0.616, 0, 1),
+								5: -1,
+								6: Color(0.49, 0.635, 0.141, 1),
+								-1: Color(0, 0, 0, 0)
+							}
 
 
-							func update_tileset(tileset):
-								tilemap.tile_set = tileset
+							onready var main = get_node("/root/adamantrisChromaChalk")
+							onready var canvas_image = Image.new()
+							onready var canvas_texture = ImageTexture.new()
+							var textrect
+
 							"""
 						)
 					)
 				.AddRule(
 					new TransformationRuleBuilder()
-						.Named("check if there already exists a changed tileset, and connect a signal from main mod node to receive newly created ones.")
+						.Named("Create a TextureRect for displaying the drawings")
 						.Do(Operation.Append)
 						.Matching(TransformationPatternFactory.CreateFunctionDefinitionPattern("_ready", [])) //if theres an tileset and its bigger than vanilla, take it
 						.With(
@@ -92,6 +115,30 @@ public class Mod : IMod
 							indent: 1
 						)
 				)
+
+				.AddRule(
+					new TransformationRuleBuilder()
+					.Named("Connect to the drawing signal, and add couple of functions")
+					.Do(Operation.Append)
+					.Matching(TransformationPatternFactory.CreateGdSnippetPattern(
+						"""
+						Network.connect("_new_player_join", self, "set_drawing")
+						"""
+					)
+					.With(
+						"""
+
+							PlayerData.connect("drawing", self, "set_drawing")
+
+						func process(delta):
+							if drawing:
+								pass
+
+						func set_drawing(is_drawing):
+							drawing = is_drawing
+
+						"""
+						)
 				.Build()
 
 		);
@@ -103,49 +150,52 @@ public class Mod : IMod
 				.Patching("res://Scenes/Entities/Player/paint_node.gdc")
 				.AddRule(
 					new TransformationRuleBuilder()
-						.Named("Add a path to my main mod below extends")
+						.Named("Make the paint node emit a signal upon drawing")
 						.Do(Operation.Append)
-						.Matching(TransformationPatternFactory.CreateGlobalsPattern())
+						.Matching(TransformationPatternFactory.CreateGdSnippetPattern("PlayerData.emit_signal("_chalk_update", global_transform.origin)"))
 						.With(
 							"""
 
-							onready var chalk_mod = get_node("/root/adamantrisChromaChalk")
+							func transmit_drawing(drawing):
+								PlayerData.emit_signal("drawing", drawing)
 
 							"""
 						)
 				)
 				.AddRule(
 					new TransformationRuleBuilder()
-						.Named("Add a custom draw variable, a ready for my signal and an action + release function")
+					.Named("make drawing a setget")
+					.Do(Operation.ReplaceAll)
+					.Matching(TransformationPatternFactory.CreateGdSnippetPattern("var drawing = false"))
+					.With(
+						"""
+
+						var drawing = false setget transmit_drawing
+
+						"""
+					)
+				)
+				.Build()
+
+		;)
+			mi.RegisterScriptMod(
+				new TransformationRuleScriptModBuilder()
+					.ForMod(mi)
+					.Named("PlayerData patches")
+					.Patching("res://Scenes/Singletons/playerdata.gdc")
+					.AddRule(
+						new TransformationRuleBuilder()
+						.Named("Add a signal for the paint node to emit to")
 						.Do(Operation.Append)
-						.Matching(TransformationPatternFactory.CreateGdSnippetPattern("""var color = 0"""))
+						.Matching(TransformationPatternFactory.CreateGlobalsPattern())
 						.With(
 							"""
 
-							var custom_draw = false
+							signal drawing(is_drawing)
 
-							func _ready():
-								yield(get_tree(), "idle_frame")
-								chalk_mod.connect("custom_draw", self, "on_custom_draw")
-								chalk_mod.connect("custom_draw_stop", self, "on_custom_draw_stop")
-								
-							func on_custom_draw(mod_color_id):
-								print("should i draw or nah")
-								print("received a custom draw signal, id is " + str(mod_color_id))
-								custom_draw = true
-								drawing = true
-								color = mod_color_id + 6
-								
-							func on_custom_draw_stop():
-								print("received a signal to stop drawing")
-								custom_draw = false
-								drawing = false
-								color = 0
-
-							""" //for anyone curious, +6 is because the atlas lookup thingymajig needs to start at 0 for pixel setting, but custom colors start at 7
+							"""
 						)
-				)
-				.Build()
+					)
 		);
 		
 	}
