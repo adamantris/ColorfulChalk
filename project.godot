@@ -13,13 +13,10 @@ config_version=4
 config/name="adamantris.ChromaChalk"
 config/icon="res://icon.png"
 
-[editor_plugins]
-
-enabled=PoolStringArray( "res://addons/pyload_exp_help/plugin.cfg" )
-
 [gdnative]
 
 singletons=[ "res://pythonscript.gdnlib" ]
+singletons_disabled=[ "res://pythonscript.gdnlib" ]
 
 [gui]
 

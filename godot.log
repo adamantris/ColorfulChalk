@@ -1,0 +1,143 @@
+Godot Engine v3.5.2.stable.custom_build.170ba337a - https://godotengine.org
+OpenGL ES 3.0 Renderer: AMD Radeon Graphics (radeonsi, gfx1200, LLVM 20.1.8, DRM 3.64, 6.17.3-201.nobara.fc42.x86_64)
+Async. shader compilation: OFF
+ 
+Loading Resources...
+554 Resoures Loaded from 32 Subdirectories.
+Creating Voice Bank...
+Generated Table lake with category fish
+Generated Table ocean with category fish
+Generated Table deep with category fish
+Generated Table prehistoric with category fish
+Generated Table rain with category fish
+Generated Table alien with category fish
+Generated Table void with category fish
+Generated Table water_trash with category fish
+Generated Table bush_bug with category bug
+Generated Table shoreline_bug with category bug
+Generated Table tree_bug with category bug
+Generated Table seashell with category none
+Generated Table trash with category none
+Generated Table metal with category fish
+Steam Active under username: Ferrum ID: 76561198052051373
+Network Socket Reset
+Patches:[Node:7465] Patches
+Util:[Node:7466] Util
+Loader:[Node:7467] Loader
+Printer:[Node:7468] Printer
+Mapper:[Node:7469] Mapper
+[LURE-REFRESHED/MAIN]: Modules loaded.
+[/root/SulayreLure]
+	L[/Patches]
+	L[/Util]
+	L[/Loader]
+	L[/Printer]
+	L[/Mapper]
+[LURE-REFRESHED/MAIN]: searching for gdweave options json
+ERROR: Can't use get_node() with absolute paths from outside the active scene tree.
+   at: Node::get_node_or_null (scene\main\node.cpp:1385) - Condition "!data.inside_tree && p_path.is_absolute()" is true. Returned: nullptr
+after packet thread start
+packet thread started
+Loading Particles for Preloading...
+Particles Obtained
+Loading General Save
+Loading Save Slot 1
+[LURE-REFRESHED/PATCHES]: Lure is filtering modded content from the vanilla save file to avoid corruption
+[LURE-REFRESHED/PATCHES]: Filtered modded things from the vanilla save successfully!
+Achievement 10k_cash already obtained.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Creature Already exists in journal.
+Checking for save migrations...
+Migrated save found.
+ERROR: (Node not found: "Viewport" (relative to "chalk_canvas").)
+   at: Node::get_node (scene\main\node.cpp:1477) - Method failed. Returning: nullptr
+ERROR: ViewportTexture: Path to node is invalid.
+   at: ViewportTexture::setup_local_to_scene (scene\main\viewport.cpp:70) - Condition "!vpn" is true.
+ERROR: (Node not found: "Viewport" (relative to "chalk_canvas").)
+   at: Node::get_node (scene\main\node.cpp:1477) - Method failed. Returning: nullptr
+ERROR: ViewportTexture: Path to node is invalid.
+   at: ViewportTexture::setup_local_to_scene (scene\main\viewport.cpp:70) - Condition "!vpn" is true.
+ERROR: (Node not found: "Viewport" (relative to "chalk_canvas").)
+   at: Node::get_node (scene\main\node.cpp:1477) - Method failed. Returning: nullptr
+ERROR: ViewportTexture: Path to node is invalid.
+   at: ViewportTexture::setup_local_to_scene (scene\main\viewport.cpp:70) - Condition "!vpn" is true.
+ERROR: (Node not found: "Viewport" (relative to "chalk_canvas").)
+   at: Node::get_node (scene\main\node.cpp:1477) - Method failed. Returning: nullptr
+ERROR: ViewportTexture: Path to node is invalid.
+   at: ViewportTexture::setup_local_to_scene (scene\main\viewport.cpp:70) - Condition "!vpn" is true.

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 extends Node
-
+signal undo
 signal save_button_pressed(id)
 
 #this is an extremely convoluted mess and i hate it
@@ -101,7 +101,7 @@ func on_file_selected(path: String):
 	#if load_thread and load_thread.is_active():
 	#	load_thread.wait_to_finish()
 	
-	main.pynode.load_img(path)
+	#main.pynode.load_img(path)
 	#load_thread = Thread.new()
 	#load_thread.start(self, "_thread_load_function", path)
 
@@ -275,3 +275,7 @@ func paste_img(extra_arg_0):
 
 func _on_paste_button_pressed():
 	file_dialog.popup_centered() # Replace with function body.
+
+
+func on_undo():
+	emit_signal("undo") # Replace with function body.
