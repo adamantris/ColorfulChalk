@@ -100,6 +100,7 @@ func set_custom_color(color):
 func set_cell(posx, posy, color):
 	#print("proxying set_cell")
 	van_tilemap.set_cell(posx, posy, color)
+	#draw.draw_new([draw.DrawMode.SQUARE, ])
 	
 	
 

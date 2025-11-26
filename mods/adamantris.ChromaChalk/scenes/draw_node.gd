@@ -35,16 +35,17 @@ func _ready():
 	
 	print("we created our empty image: " + str(tilemap_img))
 	
-	
+	#var meow = []
 	
 	for tile in prev_canv.get_used_cells():
 		var color = API.chalk_color.get(prev_canv.get_cellv(tile))
+#		meow.append(prev_canv.get_cellv(tile))
 		tilemap_img.set_pixelv(prev_canv.world_to_map(tile), color)
 		
-		print("set color " + str(color) + "for tile " + str(prev_canv.world_to_map(tile)))
+		#print("set color " + str(color) + "for tile " + str(prev_canv.world_to_map(tile)))
 	
 	
-	
+	#print(meow)
 	print("we tried filling the tilemap img " + str(tilemap_img))
 	
 	yield(get_tree().create_timer(0.5), "timeout")
@@ -57,7 +58,6 @@ func _ready():
 	
 	print("did we create our imagetexture? " + str(tilemap_tex))
 	
-	stored_strokes.append([DrawMode.TEXTURE, Vector2(0, 0), tilemap_tex])
 	update()
 	
 func _draw():
@@ -122,4 +122,24 @@ func draw_api_text(id, pos, text, color):
 	var text_data = [DrawMode.TEXT, font, pos, text, color]
 	stored_strokes.append(text_data)
 	undo_queue.append(1)
+	update()
+	
+func replicate(data):
+	
+	if data.empty() == true:
+		return
+	
+	var repl_img = Image.new()
+	repl_img.create(200, 200, true, Image.FORMAT_RGBA8)
+	
+	repl_img.lock()
+	
+	for pixel in data:
+		repl_img.set_pixelv(pixel[0], API.chalk_color.get(pixel[1]))
+		
+	var repl_tex = ImageTexture.new()
+	repl_tex.create_from_image(repl_img)
+	
+	stored_strokes.append([DrawMode.TEXTURE, Vector2(0, 0), repl_tex])
+	repl_img.unlock()
 	update()
