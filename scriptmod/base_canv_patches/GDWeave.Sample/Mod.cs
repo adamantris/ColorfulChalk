@@ -108,6 +108,27 @@ public class Mod : IMod
 				)
 				.AddRule(
 					new TransformationRuleBuilder()
+					.Named("Snoop into _add_brush so we can draw lines too")
+					.Do(Operation.Append)
+					.Matching(TransformationPatternFactory.CreateGdSnippetPattern(
+						"""
+						$Viewport / TileMap.set_cell(final.x, final.y, color)
+						send_load.append([final, color])
+						"""
+					))
+					.With(
+						"""
+
+						get_node("Viewport/TileMap/Node2D").new_line(_clamp_cell(from), _clamp_cell(grid_pos), color)
+
+
+						""",
+						1
+					)
+
+				)
+				.AddRule(
+					new TransformationRuleBuilder()
 					.Named("Add a call to our chalk_update")
 					.Do(Operation.Append)
 					.Matching(TransformationPatternFactory.CreateFunctionDefinitionPattern("_chalk_update", ["pos"]))

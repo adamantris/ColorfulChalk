@@ -45,12 +45,10 @@ var funny_update_counter = 0
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	#yield(self, "tree_entered")
-	print("yahoo we begin")
 	var color_picker = get_node("/root/adamantrisChromaChalk/UI/color_picker/PanelContainer/VBoxContainer/Control/ColorPicker")
-	color_picker.connect("color_changed", self, "set_custom_color")
-	print("we got the color picker, now trying tilemap")
+	#color_picker.connect("color_changed", self, "set_custom_color")
 #	var tilemap = get_node("../TileMap")
-	print("we got the tilemap node, renaming it")
+
 #	tilemap.name = "vanilla_tilemap"
 
 	van_tilemap = get_node("../vanilla_tilemap")
@@ -152,7 +150,7 @@ func color_img(pos, size, color, last_mouse_pos):
 	var square_pos = Vector2(int(pixel_pos.x) - 1, int(pixel_pos.y))
 	var square_size = Vector2(paint_size, paint_size)
 	var paint_rect = Rect2(square_pos,  square_size)
-	draw.draw_new([DrawMode.SQUARE, paint_rect, selected_color])
+	#draw.draw_new([DrawMode.SQUARE, paint_rect, selected_color])
 	
 	#baby_node.stored_strokes.append([last_pixel_pos, pixel_pos, selected_color])
 	#baby_node.update()

@@ -8,6 +8,16 @@
 
 config_version=4
 
+_global_script_classes=[ {
+"base": "Node",
+"class": "Chroma",
+"language": "GDScript",
+"path": "res://mods/adamantris.ChromaChalk/Color_API.gd"
+} ]
+_global_script_class_icons={
+"Chroma": ""
+}
+
 [application]
 
 config/name="adamantris.ChromaChalk"

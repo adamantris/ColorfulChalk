@@ -1,5 +1,8 @@
 extends Node2D
 
+
+
+
 enum DrawMode {
 	SQUARE, #[draw mode, rectangle, color]
 	LINE, #[draw mode, start, end, color, size(optional)]
@@ -7,14 +10,15 @@ enum DrawMode {
 	TEXTURE #[draw mode, position, texture]
 }
 onready var font = preload("res://mods/adamantris.ChromaChalk/new_dynamicfont.tres")
+onready var API = get_node("/root/adamantrisChromaChalk/API")
+onready var canvas = Image.new().create(200, 200, true, Image.FORMAT_RGBA8)
+ #this
 var undo_queue = []
 var stored_strokes = []
 
-onready var API = get_node("/root/adamantrisChromaChalk/API")
+var remembered_pos
 
-# Declare member variables here. Examples:
-# var a = 2
-# var b = "text"
+
 
 
 # Called when the node enters the scene tree for the first time.
@@ -33,10 +37,10 @@ func _ready():
 	tilemap_img.create(200, 200, true, Image.FORMAT_RGBA8)
 	tilemap_img.lock()
 	
-	print("we created our empty image: " + str(tilemap_img))
 	
 	#var meow = []
 	
+
 	for tile in prev_canv.get_used_cells():
 		var color = API.chalk_color.get(prev_canv.get_cellv(tile))
 #		meow.append(prev_canv.get_cellv(tile))
@@ -46,7 +50,6 @@ func _ready():
 	
 	
 	#print(meow)
-	print("we tried filling the tilemap img " + str(tilemap_img))
 	
 	yield(get_tree().create_timer(0.5), "timeout")
 	
@@ -56,7 +59,6 @@ func _ready():
 	
 	tilemap_img.unlock()
 	
-	print("did we create our imagetexture? " + str(tilemap_tex))
 	
 	update()
 	
@@ -143,3 +145,33 @@ func replicate(data):
 	stored_strokes.append([DrawMode.TEXTURE, Vector2(0, 0), repl_tex])
 	repl_img.unlock()
 	update()
+
+func new_line(start: Vector2, end: Vector2, color):
+	#print("new line received, we start at " + str(start) + ", go to " + str(end) + " and use the color " + str(color))
+	if end == remembered_pos:
+		#print("you didnt move your mouse, current pos: " + str(end) + ", remembered pos: " + str(remembered_pos))
+		return
+	
+	
+	
+	else:
+		#print("is the remembered and current different? " + str(end) + " " + str(remembered_pos))
+		var current = start.round()
+		remembered_pos = end.round()
+		var line_img = Image.new()
+		line_img.create(200, 200, true, Image.FORMAT_RGBA8)
+		line_img.lock()
+		
+		
+		
+		while current != end:
+			line_img.set_pixelv(current, API.chalk_color.get(color))
+			current = current.move_toward(end, 1)
+			
+		var line_tex = ImageTexture.new()
+		line_tex.create_from_image(line_img)
+		line_img.unlock()
+		
+		stored_strokes.append([DrawMode.TEXTURE, Vector2(0, 0), line_tex])
+		update()
+		
