@@ -11,7 +11,8 @@ enum DrawMode {
 }
 onready var font = preload("res://mods/adamantris.ChromaChalk/new_dynamicfont.tres")
 onready var API = get_node("/root/adamantrisChromaChalk/API")
-onready var canvas = Image.new().create(200, 200, true, Image.FORMAT_RGBA8)
+onready var canvas = Image.new()
+onready var canvas_tex = ImageTexture.new()
  #this
 var undo_queue = []
 var stored_strokes = []
@@ -59,6 +60,8 @@ func _ready():
 	
 	tilemap_img.unlock()
 	
+	canvas.create(200, 200, true, Image.FORMAT_RGBA8)
+	canvas_tex.create_from_image(canvas)
 	
 	update()
 	
@@ -84,8 +87,8 @@ func _draw():
 
 
 func add_undo(amount):
-	undo_queue.append(amount)
-	
+	#undo_queue.append(amount)
+	pass
 func undo():
 	
 	if undo_queue.empty():
@@ -94,12 +97,12 @@ func undo():
 		
 	else:
 		print("we gonna undo EVERYTHING (not really)")
-		var amount = undo_queue.back()
-		var shortened_queue = stored_strokes.slice(0, stored_strokes.size() - 1 - amount) #-1 because i dont like 0 indexing
-		
-		stored_strokes = shortened_queue
+		var old_tex = undo_queue.back()
+		canvas_tex = old_tex 
 		
 		undo_queue.pop_back()
+		
+
 		
 		update()
 		
@@ -146,7 +149,7 @@ func replicate(data):
 	repl_img.unlock()
 	update()
 
-func new_line(start: Vector2, end: Vector2, color):
+func new_line(start: Vector2, end: Vector2, brush_size, color):
 	#print("new line received, we start at " + str(start) + ", go to " + str(end) + " and use the color " + str(color))
 	if end == remembered_pos:
 		#print("you didnt move your mouse, current pos: " + str(end) + ", remembered pos: " + str(remembered_pos))
@@ -158,20 +161,49 @@ func new_line(start: Vector2, end: Vector2, color):
 		#print("is the remembered and current different? " + str(end) + " " + str(remembered_pos))
 		var current = start.round()
 		remembered_pos = end.round()
-		var line_img = Image.new()
-		line_img.create(200, 200, true, Image.FORMAT_RGBA8)
+		var line_img
+		
+		if color == -1: #for deletion
+			line_img = canvas
+			
+		else:
+			line_img = Image.new()
+			line_img.create(200, 200, true, Image.FORMAT_RGBA8)
+		
 		line_img.lock()
 		
 		
+		for x in brush_size:
+			for y in brush_size:
+				line_img.set_pixelv(current + Vector2(x, y), API.chalk_color.get(color))
 		
 		while current != end:
-			line_img.set_pixelv(current, API.chalk_color.get(color))
+			for x in brush_size:
+				for y in brush_size:
+					line_img.set_pixelv(current + Vector2(x, y), API.chalk_color.get(color))
 			current = current.move_toward(end, 1)
+			
+		for x in brush_size:
+			for y in brush_size:
+				line_img.set_pixelv(current + Vector2(x, y), API.chalk_color.get(color))
 			
 		var line_tex = ImageTexture.new()
 		line_tex.create_from_image(line_img)
 		line_img.unlock()
 		
-		stored_strokes.append([DrawMode.TEXTURE, Vector2(0, 0), line_tex])
+		if undo_queue.size() < 5:
+			undo_queue.append(canvas)
+			
+		elif undo_queue.size() == 5:
+			undo_queue.pop_front()
+			undo_queue.append(canvas)
+			
+		var img_size = Rect2(Vector2(0, 0), Vector2(200, 200))
+		
+		if color != -1:
+			canvas.blend_rect(line_img, img_size, Vector2(0, 0))
+		canvas_tex.set_data(canvas)
+		
+		stored_strokes = [[DrawMode.TEXTURE, Vector2(0, 0), canvas_tex]]# .append([DrawMode.TEXTURE, Vector2(0, 0), line_tex])
 		update()
 		

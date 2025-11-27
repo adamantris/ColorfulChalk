@@ -119,7 +119,7 @@ public class Mod : IMod
 					.With(
 						"""
 
-						get_node("Viewport/TileMap/Node2D").new_line(_clamp_cell(from), _clamp_cell(grid_pos), color)
+						get_node("Viewport/TileMap/Node2D").new_line(_clamp_cell(from), _clamp_cell(grid_pos), brush_size, color)
 
 
 						""",
