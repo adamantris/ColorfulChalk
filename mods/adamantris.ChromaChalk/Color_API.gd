@@ -22,7 +22,8 @@ onready var chalk_color = { #color values courtesy to GIMP!
 	4: Color(0.902, 0.616, 0, 1),
 	5: Color(0, 0, 0, 0), #we wont support rainbow chalk, that would make managing an image a massive headache. also why is green after rainbow?
 	6: Color(0.49, 0.635, 0.141, 1),
-	7: Color(0.12, 0.26, 0.69, 1),# Color(0.02, 0.016, 0.667, 1), #our custom color!
+	7: Color(0.12, 0.26, 0.69, 1),
+	4294967295: Color(0.12, 0.26, 0.69, 1),# Color(0.02, 0.016, 0.667, 1), #our custom color!
 	-1: Color(0, 0, 0, 0) #because we be erasin stuff
 }
 

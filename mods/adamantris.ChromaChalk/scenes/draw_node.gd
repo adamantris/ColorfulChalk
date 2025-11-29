@@ -11,6 +11,7 @@ enum DrawMode {
 }
 onready var font = preload("res://mods/adamantris.ChromaChalk/new_dynamicfont.tres")
 onready var API = get_node("/root/adamantrisChromaChalk/API")
+onready var vanilla_tilemap: TileMap = get_node("../../vanilla_tilemap")
 onready var canvas = Image.new()
 onready var canvas_tex = ImageTexture.new()
  #this
@@ -92,11 +93,9 @@ func add_undo(amount):
 func undo():
 	
 	if undo_queue.empty():
-		print("theres nothing there to undo!")
 		return
 		
 	else:
-		print("we gonna undo EVERYTHING (not really)")
 		var old_tex = undo_queue.back()
 		canvas_tex = old_tex 
 		
@@ -134,13 +133,25 @@ func replicate(data):
 	if data.empty() == true:
 		return
 	
+	var color
+	
 	var repl_img = Image.new()
 	repl_img.create(200, 200, true, Image.FORMAT_RGBA8)
 	
 	repl_img.lock()
 	
 	for pixel in data:
-		repl_img.set_pixelv(pixel[0], API.chalk_color.get(pixel[1]))
+		if not pixel[1] in range(-1, 7):
+			var int_color = pixel[1]
+			if int_color < -1:
+				int_color = 16777216 + int_color #signed -> unsigned: 2^24 - our number
+				
+			var prepared_string = "#%x" % int_color
+			color = Color(prepared_string) #this is ugly, but the server responds with a signed integer, while we dont want negative numbers for colors
+			
+		else:
+			color = API.chalk_color.get(pixel[1])
+		repl_img.set_pixelv(pixel[0], color)
 		
 	var repl_tex = ImageTexture.new()
 	repl_tex.create_from_image(repl_img)
@@ -149,13 +160,11 @@ func replicate(data):
 	repl_img.unlock()
 	update()
 
-func new_line(start: Vector2, end: Vector2, brush_size, color):
-	#print("new line received, we start at " + str(start) + ", go to " + str(end) + " and use the color " + str(color))
+func new_line(start: Vector2, end: Vector2, brush_size, color, canvas_id):
+	var send_load = []
+	
 	if end == remembered_pos:
-		#print("you didnt move your mouse, current pos: " + str(end) + ", remembered pos: " + str(remembered_pos))
 		return
-	
-	
 	
 	else:
 		#print("is the remembered and current different? " + str(end) + " " + str(remembered_pos))
@@ -172,21 +181,41 @@ func new_line(start: Vector2, end: Vector2, brush_size, color):
 		
 		line_img.lock()
 		
+		var dict_color = API.chalk_color.get(color)
+		var hex_color = dict_color.to_html(false)
+		#VERY creative use of the tilemap. I want to use the basic tilemap as storage for all colors (that way vanilla servers repeat it upon joining)
+		#so we convert a hex color code to int first, and use it as a tile ID. the tile ID is a signed 24-bit number,
+		#which means we have to check for it later when we replicate colors and convert it to positive on demand
+		
+		var hexint = str("0x" + hex_color).hex_to_int()
+
 		
 		for x in brush_size:
 			for y in brush_size:
-				line_img.set_pixelv(current + Vector2(x, y), API.chalk_color.get(color))
+				var offset = Vector2(x, y)
+				line_img.set_pixelv(current + offset, dict_color)
+				vanilla_tilemap.set_cellv(current + offset, hexint)
+				send_load.append([current + offset, hexint])
 		
 		while current != end:
 			for x in brush_size:
 				for y in brush_size:
-					line_img.set_pixelv(current + Vector2(x, y), API.chalk_color.get(color))
+					var offset = Vector2(x, y)
+					line_img.set_pixelv(current + offset, dict_color)
+					vanilla_tilemap.set_cellv(current + offset, hexint)
+					send_load.append([current + offset, hexint]) #same as earlier
 			current = current.move_toward(end, 1)
-			
+		
+		
 		for x in brush_size:
 			for y in brush_size:
-				line_img.set_pixelv(current + Vector2(x, y), API.chalk_color.get(color))
-			
+				var offset = Vector2(x, y)
+				line_img.set_pixelv(current + offset, dict_color)
+				vanilla_tilemap.set_cellv(current + offset, hexint)
+				send_load.append([current + offset, hexint])
+				
+		Network._send_P2P_Packet({"type": "chalk_packet", "data": send_load.duplicate(), "canvas_id": canvas_id}, "all", 2, Network.CHANNELS.CHALK)
+		
 		var line_tex = ImageTexture.new()
 		line_tex.create_from_image(line_img)
 		line_img.unlock()
