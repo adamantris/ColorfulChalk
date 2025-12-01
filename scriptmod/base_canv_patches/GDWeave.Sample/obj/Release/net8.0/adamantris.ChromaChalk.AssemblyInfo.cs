@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("adamantris")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.0.9.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.9+5823cf631f3d7908574c1325bee091a1e44c0a6b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.9+b824fbf6ecae70d6c0b8ea0bd35dab117e83f830")]
 [assembly: System.Reflection.AssemblyProductAttribute("adamantris.ChromaChalk")]
 [assembly: System.Reflection.AssemblyTitleAttribute("adamantris.ChromaChalk")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.0.9.0")]

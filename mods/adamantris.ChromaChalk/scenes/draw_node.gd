@@ -12,20 +12,27 @@ enum DrawMode {
 onready var font = preload("res://mods/adamantris.ChromaChalk/new_dynamicfont.tres")
 onready var API = get_node("/root/adamantrisChromaChalk/API")
 onready var vanilla_tilemap: TileMap = get_node("../../vanilla_tilemap")
-onready var canvas = Image.new()
-onready var canvas_tex = ImageTexture.new()
+var canvas
+var canvas_tex
  #this
 var undo_queue = []
 var stored_strokes = []
 
 var remembered_pos
+var img_size = Rect2(Vector2(0, 0), Vector2(200, 200))
+var canv_beginning = Vector2(0, 0)
 
+func _init():
+	canvas = Image.new()
+	canvas_tex = ImageTexture.new()
+	canvas.create(200, 200, true, Image.FORMAT_RGBA8)
+	canvas.lock()
+	canvas_tex.create_from_image(canvas)
+	canvas.unlock()
 
-
-
-# Called when the node enters the scene tree for the first time.
 func _ready():
-	var ll = get_node("/root/adamantrisChromaChalk/UI") # Replace with function body.
+
+	var ll = get_node("/root/adamantrisChromaChalk/UI")
 	ll.connect("undo", self, "undo")
 	
 	API.connect("api_tile", self, "draw_api_tile")
@@ -61,9 +68,7 @@ func _ready():
 	
 	tilemap_img.unlock()
 	
-	canvas.create(200, 200, true, Image.FORMAT_RGBA8)
-	canvas_tex.create_from_image(canvas)
-	
+
 	update()
 	
 func _draw():
@@ -85,6 +90,8 @@ func _draw():
 				
 			DrawMode.TEXTURE:
 				draw_texture(draw[2], draw[1])
+				
+	draw_texture(canvas_tex, canv_beginning)
 
 
 func add_undo(amount):
@@ -130,6 +137,8 @@ func draw_api_text(id, pos, text, color):
 	
 func replicate(data):
 	
+	#print("we have received some chalk packets, debug print: " + str(data))
+	
 	if data.empty() == true:
 		return
 	
@@ -144,19 +153,27 @@ func replicate(data):
 		if not pixel[1] in range(-1, 7):
 			var int_color = pixel[1]
 			if int_color < -1:
+				#print("we are below -1, need to convert")
 				int_color = 16777216 + int_color #signed -> unsigned: 2^24 - our number
 				
+			
 			var prepared_string = "#%x" % int_color
 			color = Color(prepared_string) #this is ugly, but the server responds with a signed integer, while we dont want negative numbers for colors
-			
+			#print("we received a mod color, this is it: " + str(color))
 		else:
 			color = API.chalk_color.get(pixel[1])
+			#print("no mod color, this is our current color: " + str(color))
 		repl_img.set_pixelv(pixel[0], color)
 		
 	var repl_tex = ImageTexture.new()
 	repl_tex.create_from_image(repl_img)
 	
-	stored_strokes.append([DrawMode.TEXTURE, Vector2(0, 0), repl_tex])
+	canvas.lock()
+	canvas.blend_rect(repl_img, img_size, canv_beginning)
+	canvas.unlock()
+	canvas_tex.set_data(canvas)
+	
+	#stored_strokes.append([DrawMode.TEXTURE, Vector2(0, 0), repl_tex])
 	repl_img.unlock()
 	update()
 
@@ -227,7 +244,6 @@ func new_line(start: Vector2, end: Vector2, brush_size, color, canvas_id):
 			undo_queue.pop_front()
 			undo_queue.append(canvas)
 			
-		var img_size = Rect2(Vector2(0, 0), Vector2(200, 200))
 		
 		if color != -1:
 			canvas.blend_rect(line_img, img_size, Vector2(0, 0))
