@@ -185,12 +185,12 @@ func on_node_exit():
 
 
 
-func _process(delta):
-	packet_timer += delta
-	if packet_timer >= 0.2:
-		#print("packet timer over 0.2, posting")
-		packet_semaphore.post()
-		packet_timer = 0.0
+#func _process(delta):
+#	packet_timer += delta
+#	if packet_timer >= 0.2:
+#		#print("packet timer over 0.2, posting")
+#		packet_semaphore.post()
+#		packet_timer = 0.0
 
 
 
@@ -211,111 +211,111 @@ func chat_command(message: String, player, is_self):
 
 	
 	
-func read_packets():
-	print("packet thread started")
-	while true:
-		packet_semaphore.wait()
-		packet_mutex.lock()
-		var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 50) #reading for 50 messages
-		packet_mutex.unlock()
-		
-		if message_array.empty() == true:
-			#print("Steam Message Array is empty. Continuing.")
-			continue
-		
-		for message in message_array:
-			
-			# Networking is such an awful mess. There's always something broken about the packets,
-			# so i'm gonna be extremely defensive about it. hopefully it running on a seperate thread helps!
-			
-
-				
-			if typeof(message_array) != TYPE_ARRAY:
-				print("Steam Message Array is malformed. Discarding.")
-				continue
-			
-			elif typeof(message) != TYPE_DICTIONARY:
-				print("Message isn't a dict. Discarding.")
-				continue
-				
-			elif typeof(message.get("identity")) != TYPE_STRING or message.get("identity") == null:
-				print("Identity string is broken. Discarding.")
-				continue
-
-			var sender_steam_id = message.get("identity").get_slice(":", 1)
-			var decoded = bytes2var(message.get("payload"))
-			
-#			if 
-			
-			if typeof(decoded) != TYPE_ARRAY:
-				print("Decoded payload isn't an array. Discarding.")
-				continue
-			
-			if decoded.size() < 3 or decoded[2] != protocol_version:
-				print("Discarding packet with wrong protocol version.")
-				continue
-				
-
-			var packet_command = decoded[0]
-			
-			
-			if decoded[0] == null or typeof(decoded[0]) != TYPE_STRING:
-				print("No proper command received in packet. Discarding.")
-				continue
-				
-				
-			match packet_command:
-				"color_handshake":
-					var response_poolbyte = var2bytes(["handshake_response", "hello_back", protocol_version])
-					packet_mutex.lock()
-					if not sender_steam_id in mod_user_list:
-						mod_user_list.call_deferred("append", sender_steam_id)
-					packet_mutex.unlock()
-					Steam.call_deferred("sendMessageToUser", sender_steam_id, response_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
-				
-				"handshake_response":
-					packet_mutex.lock()
-					if not sender_steam_id in mod_user_list:
-						mod_user_list.call_deferred("append", sender_steam_id)
-					packet_mutex.unlock()
-					call_deferred("request_img")
-				
-				"requesting_img":
-						call_deferred("send_img", sender_steam_id)
-						
-				"receive_img":
-					var compressed_data_poolbytes: PoolByteArray = decoded[1]
-					var uncompressed_size = decoded[3]
-					var decompressed_data_poolbytes = compressed_data_poolbytes.decompress(uncompressed_size, File.COMPRESSION_ZSTD)
-					var received_dict = decompressed_data_poolbytes[2]
-					var new_colors_from_net = []
-					for color_string in received_dict.keys():
-						if not color_dict.has(color_string):
-							new_colors_from_net.append(Color(color_string))
-					if not new_colors_from_net.empty():
-						call_deferred("_apply_thread_results", {"new_color_map": received_dict})
-					
-					#call_deferred("recreate_img", decompressed_data_poolbytes)
-					
-				#				"requested_dict":
-#					var dict_poolbyte = var2bytes(["received_dict", color_dict, protocol_version])
-#					Steam.call_deferred("sendMessageToUser", sender_steam_id, dict_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
+#func read_packets():
+#	print("packet thread started")
+#	while true:
+#		packet_semaphore.wait()
+#		packet_mutex.lock()
+#		var message_array = Steam.receiveMessagesOnChannel(COLOR_CHANNEL, 50) #reading for 50 messages
+#		packet_mutex.unlock()
 #
-#				"received_dict":
-
-
-
-
-				"create_new_color":
-					var remote_color_dict = decoded[1]
-					var new_colors_from_net = []
-					for color_string in remote_color_dict.keys():
-						if not color_dict.has(color_string):
-							new_colors_from_net.append(Color(color_string))
-					if not new_colors_from_net.empty():
-						call_deferred("_apply_thread_results", {"new_color_map": remote_color_dict})
-						
-
-						
-				"":
-					pass
+#		if message_array.empty() == true:
+#			#print("Steam Message Array is empty. Continuing.")
+#			continue
+#
+#		for message in message_array:
+#
+#			# Networking is such an awful mess. There's always something broken about the packets,
+#			# so i'm gonna be extremely defensive about it. hopefully it running on a seperate thread helps!
+#
+#
+#
+#			if typeof(message_array) != TYPE_ARRAY:
+#				print("Steam Message Array is malformed. Discarding.")
+#				continue
+#
+#			elif typeof(message) != TYPE_DICTIONARY:
+#				print("Message isn't a dict. Discarding.")
+#				continue
+#
+#			elif typeof(message.get("identity")) != TYPE_STRING or message.get("identity") == null:
+#				print("Identity string is broken. Discarding.")
+#				continue
+#
+#			var sender_steam_id = message.get("identity").get_slice(":", 1)
+#			var decoded = bytes2var(message.get("payload"))
+#
+##			if 
+#
+#			if typeof(decoded) != TYPE_ARRAY:
+#				print("Decoded payload isn't an array. Discarding.")
+#				continue
+#
+#			if decoded.size() < 3 or decoded[2] != protocol_version:
+#				print("Discarding packet with wrong protocol version.")
+#				continue
+#
+#
+#			var packet_command = decoded[0]
+#
+#
+#			if decoded[0] == null or typeof(decoded[0]) != TYPE_STRING:
+#				print("No proper command received in packet. Discarding.")
+#				continue
+#
+#
+#			match packet_command:
+#				"color_handshake":
+#					var response_poolbyte = var2bytes(["handshake_response", "hello_back", protocol_version])
+#					packet_mutex.lock()
+#					if not sender_steam_id in mod_user_list:
+#						mod_user_list.call_deferred("append", sender_steam_id)
+#					packet_mutex.unlock()
+#					Steam.call_deferred("sendMessageToUser", sender_steam_id, response_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
+#
+#				"handshake_response":
+#					packet_mutex.lock()
+#					if not sender_steam_id in mod_user_list:
+#						mod_user_list.call_deferred("append", sender_steam_id)
+#					packet_mutex.unlock()
+#					call_deferred("request_img")
+#
+#				"requesting_img":
+#						call_deferred("send_img", sender_steam_id)
+#
+#				"receive_img":
+#					var compressed_data_poolbytes: PoolByteArray = decoded[1]
+#					var uncompressed_size = decoded[3]
+#					var decompressed_data_poolbytes = compressed_data_poolbytes.decompress(uncompressed_size, File.COMPRESSION_ZSTD)
+#					var received_dict = decompressed_data_poolbytes[2]
+#					var new_colors_from_net = []
+#					for color_string in received_dict.keys():
+#						if not color_dict.has(color_string):
+#							new_colors_from_net.append(Color(color_string))
+#					if not new_colors_from_net.empty():
+#						call_deferred("_apply_thread_results", {"new_color_map": received_dict})
+#
+#					#call_deferred("recreate_img", decompressed_data_poolbytes)
+#
+#				#				"requested_dict":
+##					var dict_poolbyte = var2bytes(["received_dict", color_dict, protocol_version])
+##					Steam.call_deferred("sendMessageToUser", sender_steam_id, dict_poolbyte, send_type.RELIABLE, COLOR_CHANNEL)
+##
+##				"received_dict":
+#
+#
+#
+#
+#				"create_new_color":
+#					var remote_color_dict = decoded[1]
+#					var new_colors_from_net = []
+#					for color_string in remote_color_dict.keys():
+#						if not color_dict.has(color_string):
+#							new_colors_from_net.append(Color(color_string))
+#					if not new_colors_from_net.empty():
+#						call_deferred("_apply_thread_results", {"new_color_map": remote_color_dict})
+#
+#
+#
+#				"":
+#					pass

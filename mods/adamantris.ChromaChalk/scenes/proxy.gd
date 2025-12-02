@@ -93,7 +93,8 @@ func _ready():
 	canvas = get_node("../..") # cursed relative path but easier to handle
 	canvas_transform = canvas.transform
 func set_custom_color(color):
-	chalk_color[7] = color
+	#chalk_color[7] = color
+	pass
 
 func set_cell(posx, posy, color):
 	#print("proxying set_cell")

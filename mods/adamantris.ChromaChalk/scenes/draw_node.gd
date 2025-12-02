@@ -2,7 +2,6 @@ extends Node2D
 
 
 
-
 enum DrawMode {
 	SQUARE, #[draw mode, rectangle, color]
 	LINE, #[draw mode, start, end, color, size(optional)]
@@ -12,6 +11,7 @@ enum DrawMode {
 onready var font = preload("res://mods/adamantris.ChromaChalk/new_dynamicfont.tres")
 onready var API = get_node("/root/adamantrisChromaChalk/API")
 onready var vanilla_tilemap: TileMap = get_node("../../vanilla_tilemap")
+onready var canvas_script = get_node("../../..") #i LOVE wonky node paths
 var canvas
 var canvas_tex
  #this
@@ -179,7 +179,7 @@ func replicate(data):
 
 func new_line(start: Vector2, end: Vector2, brush_size, color, canvas_id):
 	var send_load = []
-	
+#	var resume_func = canvas_script._add_brush()
 	if end == remembered_pos:
 		return
 	
@@ -206,33 +206,57 @@ func new_line(start: Vector2, end: Vector2, brush_size, color, canvas_id):
 		
 		var hexint = str("0x" + hex_color).hex_to_int()
 
-		
-		for x in brush_size:
-			for y in brush_size:
-				var offset = Vector2(x, y)
-				line_img.set_pixelv(current + offset, dict_color)
-				vanilla_tilemap.set_cellv(current + offset, hexint)
-				send_load.append([current + offset, hexint])
-		
-		while current != end:
+		if not color in range(-1, 7):
 			for x in brush_size:
 				for y in brush_size:
 					var offset = Vector2(x, y)
 					line_img.set_pixelv(current + offset, dict_color)
 					vanilla_tilemap.set_cellv(current + offset, hexint)
-					send_load.append([current + offset, hexint]) #same as earlier
-			current = current.move_toward(end, 1)
-		
-		
-		for x in brush_size:
-			for y in brush_size:
-				var offset = Vector2(x, y)
-				line_img.set_pixelv(current + offset, dict_color)
-				vanilla_tilemap.set_cellv(current + offset, hexint)
-				send_load.append([current + offset, hexint])
+					send_load.append([current + offset, hexint])
+			
+			while current != end:
+				for x in brush_size:
+					for y in brush_size:
+						var offset = Vector2(x, y)
+						line_img.set_pixelv(current + offset, dict_color)
+						vanilla_tilemap.set_cellv(current + offset, hexint)
+						send_load.append([current + offset, hexint]) #same as earlier
+				current = current.move_toward(end, 1)
+			
+			
+			for x in brush_size:
+				for y in brush_size:
+					var offset = Vector2(x, y)
+					line_img.set_pixelv(current + offset, dict_color)
+					vanilla_tilemap.set_cellv(current + offset, hexint)
+					send_load.append([current + offset, hexint])
 				
+		elif color in range (-1, 7):
+			for x in brush_size:
+				for y in brush_size:
+					var offset = Vector2(x, y)
+					line_img.set_pixelv(current + offset, dict_color)
+					vanilla_tilemap.set_cellv(current + offset, color)
+					send_load.append([current + offset, color])
+			
+			while current != end:
+				for x in brush_size:
+					for y in brush_size:
+						var offset = Vector2(x, y)
+						line_img.set_pixelv(current + offset, dict_color)
+						vanilla_tilemap.set_cellv(current + offset, color)
+						send_load.append([current + offset, color]) #same as earlier
+				current = current.move_toward(end, 1)
+			
+			
+			for x in brush_size:
+				for y in brush_size:
+					var offset = Vector2(x, y)
+					line_img.set_pixelv(current + offset, dict_color)
+					vanilla_tilemap.set_cellv(current + offset, color)
+					send_load.append([current + offset, color])
+
 		Network._send_P2P_Packet({"type": "chalk_packet", "data": send_load.duplicate(), "canvas_id": canvas_id}, "all", 2, Network.CHANNELS.CHALK)
-		
 		var line_tex = ImageTexture.new()
 		line_tex.create_from_image(line_img)
 		line_img.unlock()

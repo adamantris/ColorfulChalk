@@ -63,32 +63,19 @@ func _ready():
 	self.connect("save_button_pressed", self, "on_save")
 	
 func on_save(id):
-	main.atlas_img.lock()
-	var selected_canv: TileMap = get_node(main.canv_paths.get(id))
-	print("saving canvas " + str(selected_canv))
-	var temp_img = Image.new()
-	temp_img.create(200, 200, false, Image.FORMAT_RGBA8)
-	temp_img.lock()
-	var tileset = selected_canv.tile_set
-	print("tileset is: " + str(tileset))
-	var set_cells = selected_canv.get_used_cells()
-	#print("set cells without world_to_map: " + str(set_cells[0]))
-	#print("set cells are: " + str(set_cells))
-	#print("set cells with world_to_map: " + str(selected_canv.world_to_map(set_cells[0])))
-	for cell in set_cells: #one cell is one vec2 on the tilemap
-		var cell_id = selected_canv.get_cellv(cell)
-		var cell_atlas_region = tileset.tile_get_region(cell_id)
-		#print("region is: " + str(cell_atlas_region))
-		var pixel_color = main.atlas_img.get_pixelv(cell_atlas_region.position)
-		#print("got color: " + pixel_color.to_html(), " , color object: " + str(pixel_color))
-		temp_img.set_pixelv(cell, pixel_color)
-		
-	var date = Time.get_datetime_dict_from_system()
-		
-	#this is the most incomprehensible string ive ever written, its supposed to be "canvas_[id]_[day]_[month]_[hour][minute][second].png" glued together
-	temp_img.save_png("user://ChromaChalk_images/canvas_" + str(id) + "_" + str(date.get("day")) + "_" + str(date.get("month")) + "_" + str(date.get("hour")) + str(date.get("minute")) + str(date.get("second")) + ".png")
-	main.atlas_img.unlock()
-	temp_img.unlock()
+	var canv_id = ""
+	if id != "1":
+		canv_id = str(id)
+	var selected_viewport = get_node("/root/world/Viewport/main/map/main_map/zones/main_zone/chalk_zones/chalk_canvas" + canv_id + "/Viewport")
+	
+	var viewport_img = selected_viewport.get_texture().get_data()
+	print("this is our viewport img: " + str(viewport_img))
+	viewport_img.lock()
+	viewport_img.flip_y()
+	
+	viewport_img.save_png("user://saved.png")
+	viewport_img.unlock()
+	
 	
 func _set_ui_busy(is_busy: bool): #this is a dumb hack
 	if paste_button:
@@ -173,53 +160,7 @@ func paste_image(id):
 #	img.unlock()
 #	call_deferred("use_pixel_data", all_pixels, id)
 	
-func use_pixel_data(pixel_array, id):
 
-
-	print("i assume the thread is marked as dead now? " + str(pixel_thread.is_alive()))
-	pixel_thread.wait_to_finish()
-	print("received id: " + id)
-	#print("this b color array: " + str(pixel_array))
-	var tilemap_path = main.canv_paths.get(id)
-	var data_for_main = { "pixels": pixel_array, "loader_path": self.get_path(), "tilemap_path": tilemap_path }
-	main.add_color_data(data_for_main)
-
-func actually_paint_tiles_on_map(pixel_array):
-	print("Callback received. Painting tiles...")
-	var selected_tilemap = get_node(main.canv_paths["1"])
-#	print("this is tilemap path: " + str(canv_path) + ", this is tilemap node: " + str(selected_tilemap))
-	if not selected_tilemap:
-		_set_ui_busy(false)
-		return
-
-	var pos = selected_tilemap.world_to_map(selected_tilemap.global_transform.origin)
-	processed_image.lock()
-	
-	
-	for entry in pixel_array:
-		var color_id = entry[0]
-		for pixel in entry[1]: 
-
-		
-
-			#var pixel_color = processed_image.get_pixel(x, y)
-			var pixel_coord = Vector2(pos.x, pos.y) + Vector2(pixel[0], pixel[1])
-			
-			selected_tilemap.set_cell(pixel_coord.x, pixel_coord.y, color_id)
-			
-			#if pixel_color.a8 == 0:
-				#print("pixel isnt visible, lets skip setting it")
-			#	continue
-			#var hex_color = pixel_color.to_html(false)
-#			var tile_id = main.color_dict.get(hex_color, -1)
-#			if tile_id != -1:
-#				var pixel_coord = Vector2(pos.x, pos.y) + Vector2(x, y)
-				
-	processed_image.unlock()
-	
-	print("Finished painting tiles. Re-enabling UI.")
-	
-	_set_ui_busy(false)
 
 func _input(event):
 	if Input.is_action_just_pressed("toggle_chalk_overlay") and menu_block == false:

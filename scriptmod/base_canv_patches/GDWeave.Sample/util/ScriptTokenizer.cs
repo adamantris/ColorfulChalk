@@ -407,6 +407,8 @@ public static class ScriptTokenizer
 							case "randf":
 								finalTokens.Add(new Token(TokenType.BuiltInFunc, (uint?)BuiltinFunction.MathRandf));
 								break;
+
+
 							default:
 								// We change this to trim the idName, otherwise the whitespace messes with the token
 								finalTokens.Add(new IdentifierToken(idName.Trim()));
