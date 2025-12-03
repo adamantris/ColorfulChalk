@@ -23,7 +23,9 @@ extends ColorPicker
 
 #onready var save_button = $"../../Button"
 onready var main = $"/root/adamantrisChromaChalk"
+onready var API = $"/root/adamantrisChromaChalk/API"
 onready var color_picker = $"/root/adamantrisChromaChalk/UI/color_picker"
+onready var panel = $"../.."
 onready var loader_logic = $"/root/adamantrisChromaChalk/UI"
 
 # Called when the node enters the scene tree for the first time.
@@ -31,7 +33,23 @@ func _ready():
 	#print("did i find a button? " + str(save_button))
 	main.connect("picker_visible", self, "picker_visible")
 	#save_button.connect("pressed", self, "button_pressed")
-	pass # Replace with function body.
+	
+	#what follows is highly suboptimal, but godot doesnt let you change the picker elements in the editor. means we have to use ugly code to rearrange stuff
+	yield(get_tree().create_timer(0.5), "timeout")
+	rearrange_controls()
+	
+
+func rearrange_controls():
+	var preview = self.get_child(1)
+	var sliders = self.get_child(4)
+	var color_presets = self.get_child(6)
+	
+	preview.visible = false
+	preview.rect_min_size = Vector2(0, 0)
+	sliders.visible = false
+	sliders.rect_min_size = Vector2(0, 0)
+	color_presets.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.rect_size = Vector2(304, 302) #after hiding everything you need to reset the size, growing happens automatically for preset colors
 
 
 func button_pressed():
@@ -43,8 +61,9 @@ func button_pressed():
 	
 
 func picker_visible():
-	if color_picker.visible == false:
-		color_picker.visible = true
-		
-	elif color_picker.visible == true:
-		color_picker.visible = false
+	color_picker.visible != color_picker.visible
+
+
+func _on_ColorPicker_color_changed(color):
+	#API.emit_signal(color)
+	pass # Replace with function body.

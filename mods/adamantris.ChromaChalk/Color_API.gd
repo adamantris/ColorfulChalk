@@ -7,6 +7,8 @@ signal new_line(id, start, end, color, size)
 signal api_tile(id, pos, color, size)
 signal api_text(id, pos, text, color)
 
+signal color_changed(color)
+
 enum DrawMode {
 	SQUARE, #[draw mode, rectangle, color]
 	LINE, #[draw mode, start, end, color, size(optional)]
@@ -26,7 +28,7 @@ onready var chalk_color = { #color values courtesy to GIMP!
 	-1: Color(0, 0, 0, 0) #because we be erasin stuff
 }
 
-onready var color_picker = get_node("/root/adamantrisChromaChalk/UI/color_picker/PanelContainer/VBoxContainer/Control/ColorPicker")
+#onready var color_picker = get_node("/root/adamantrisChromaChalk/UI/color_picker/PanelContainer/Control/ColorPicker")
 onready var save_button = get_node("/root/adamantrisChromaChalk/UI/color_picker/PanelContainer/VBoxContainer/Button")
 
 onready var custom_color = Color(0.12, 0.26, 0.69, 1)
@@ -35,6 +37,8 @@ func _init():
 	self.name = "API"
 
 func _ready():
+	
+	var color_picker = get_node("/root/adamantrisChromaChalk/UI/color_picker/PanelContainer/MarginContainer/ColorPicker")
 	color_picker.connect("color_changed", self, "set_custom_color")
 	custom_color = color_picker.color
 	
