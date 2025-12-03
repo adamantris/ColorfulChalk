@@ -205,7 +205,10 @@ func new_line(start: Vector2, end: Vector2, brush_size, color, canvas_id):
 		#which means we have to check for it later when we replicate colors and convert it to positive on demand
 		
 		var hexint = str("0x" + hex_color).hex_to_int()
-
+		print("dis b color: " + str(hexint))
+		if hexint < 7:
+			hexint = 7 #dirty hack so we dont accidentally ship white when someone picks pure black on the picker
+			 
 		if not color in range(-1, 7):
 			for x in brush_size:
 				for y in brush_size:
