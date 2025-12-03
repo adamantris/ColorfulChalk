@@ -11,6 +11,7 @@ enum DrawMode {
 onready var font = preload("res://mods/adamantris.ChromaChalk/new_dynamicfont.tres")
 onready var API = get_node("/root/adamantrisChromaChalk/API")
 onready var vanilla_tilemap: TileMap = get_node("../../vanilla_tilemap")
+onready var proxy = get_node("..")
 onready var canvas_script = get_node("../../..") #i LOVE wonky node paths
 var canvas
 var canvas_tex
@@ -142,6 +143,8 @@ func replicate(data):
 	if data.empty() == true:
 		return
 	
+	var last_unused_id = proxy.tile_set.get_last_unused_tile_id()
+	
 	var color
 	
 	var repl_img = Image.new()
@@ -150,7 +153,7 @@ func replicate(data):
 	repl_img.lock()
 	
 	for pixel in data:
-		if not pixel[1] in range(-1, 7):
+		if not pixel[1] in range(-1, last_unused_id):
 			var int_color = pixel[1]
 			if int_color < -1:
 				#print("we are below -1, need to convert")
@@ -160,9 +163,18 @@ func replicate(data):
 			var prepared_string = "#%x" % int_color
 			color = Color(prepared_string) #this is ugly, but the server responds with a signed integer, while we dont want negative numbers for colors
 			#print("we received a mod color, this is it: " + str(color))
-		else:
+		elif pixel[1] in API.chalk_color:
 			color = API.chalk_color.get(pixel[1])
 			#print("no mod color, this is our current color: " + str(color))
+		else:
+			var other_color = pixel[1]
+			var outside_texture = proxy.tile_set.tile_get_texture(other_color)
+			var outside_area = proxy.tile_set.tile_get_region(other_color)
+			var outside_img = outside_texture.get_data()
+			outside_img.lock()
+			color = outside_img.get_pixelv(outside_area.position)
+			outside_img.unlock()
+			
 		repl_img.set_pixelv(pixel[0], color)
 		
 	var repl_tex = ImageTexture.new()
@@ -188,7 +200,7 @@ func new_line(start: Vector2, end: Vector2, brush_size, color, canvas_id):
 		var current = start.round()
 		remembered_pos = end.round()
 		var line_img
-		
+		var last_unused_id = proxy.tile_set.get_last_unused_tile_id()
 		if color == -1: #for deletion
 			line_img = canvas
 			
@@ -198,18 +210,38 @@ func new_line(start: Vector2, end: Vector2, brush_size, color, canvas_id):
 		
 		line_img.lock()
 		
-		var dict_color = API.chalk_color.get(color)
+		
+		
+		var dict_color
+		
+		if color in API.chalk_color:
+			dict_color = API.chalk_color.get(color)
+		
+		elif not color in API.chalk_color:
+			var outside_texture = proxy.tile_set.tile_get_texture(color)
+			var outside_area = proxy.tile_set.tile_get_region(color)
+			var outside_img = outside_texture.get_data()
+			outside_img.lock()
+			dict_color = outside_img.get_pixelv(outside_area.position)
+			outside_img.unlock()
+		
 		var hex_color = dict_color.to_html(false)
 		#VERY creative use of the tilemap. I want to use the basic tilemap as storage for all colors (that way vanilla servers repeat it upon joining)
 		#so we convert a hex color code to int first, and use it as a tile ID. the tile ID is a signed 24-bit number,
 		#which means we have to check for it later when we replicate colors and convert it to positive on demand
 		
+		
+		
 		var hexint = str("0x" + hex_color).hex_to_int()
 		print("dis b color: " + str(hexint))
-		if hexint < 7:
-			hexint = 7 #dirty hack so we dont accidentally ship white when someone picks pure black on the picker
+		
+		#dirty hack so we dont accidentally ship colors from other mods. i know that hostileonions chalks raises the IDs to 61,
+		#but i hope that with max we can at least not trample on client-installed mods
+		if hexint <= max(last_unused_id - 1, 61):
+			print("existing color detected weewooweewoo " + str(hexint))
+			hexint = 0x010101 
 			 
-		if not color in range(-1, 7):
+		if not color in range(-1, last_unused_id):
 			for x in brush_size:
 				for y in brush_size:
 					var offset = Vector2(x, y)
@@ -234,7 +266,7 @@ func new_line(start: Vector2, end: Vector2, brush_size, color, canvas_id):
 					vanilla_tilemap.set_cellv(current + offset, hexint)
 					send_load.append([current + offset, hexint])
 				
-		elif color in range (-1, 7):
+		elif color in range (-1, last_unused_id):
 			for x in brush_size:
 				for y in brush_size:
 					var offset = Vector2(x, y)

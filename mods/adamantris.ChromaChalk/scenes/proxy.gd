@@ -6,7 +6,7 @@ enum DrawMode {
 	
 }
 
-
+var tile_set
 
 var van_tilemap: TileMap
 var texrect: TextureRect
@@ -52,6 +52,7 @@ func _ready():
 #	tilemap.name = "vanilla_tilemap"
 
 	van_tilemap = get_node("../vanilla_tilemap")
+	tile_set = van_tilemap.get_tileset()
 	#van_tilemap.visible = false
 
 	#self.name = "TileMap"
@@ -194,3 +195,6 @@ func get_cellv(vector):
 
 func set_cellv(vector, id):
 	van_tilemap.set_cellv(vector, id)
+	
+func get_tileset():
+	return tile_set
